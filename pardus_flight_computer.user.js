@@ -83,7 +83,7 @@ function navPage() {
     add_record_handler();
 
     function add_record_handler() {
-        const clickable_tiles = document.querySelectorAll('a[onclick^="navAjax"]');
+        const clickable_tiles = document.querySelectorAll('a[onclick^="nav"]');
 
         for (const clickable_tile of clickable_tiles) {
             const tile_id = clickable_tile.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
@@ -224,7 +224,7 @@ function optionsPage() {
 
     const recording_box = pardus_flight_computer_tab.addBox({
         heading: 'Recording',
-        description: 'These settings let you record the path you fly'
+        description: 'Record the path you fly'
     });
 
     function get_recording_box_html() {
