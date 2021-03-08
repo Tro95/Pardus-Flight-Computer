@@ -6,6 +6,7 @@ function mapper_urls_from_route(route = []) {
 
         if (!tile_obj) {
             console.log(`No tile object for ${route[index]}`);
+            continue;
         }
 
         if (!sector_routes[tile_obj.sector]) {
