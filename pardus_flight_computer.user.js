@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Pardus Flight Computer
-// @version         0.2
+// @version         0.3
 // @description     Flight Computer to assist pathfinding in Pardus
 // @author          Tro (Artemis)
 // @include         http*://*.pardus.at/main.php
@@ -8,8 +8,8 @@
 // @grant           GM_setValue
 // @grant           GM_getValue
 // @require         https://raw.githubusercontent.com/Tro95/Pardus-Options-Library/v2.4/pardus_options_library.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/raw/main/data/sectors.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/raw/main/utility/helpers.js
+// @require         https://github.com/Tro95/Pardus-Flight-Computer/raw/main/data/sectors.js
+// @require         https://github.com/Tro95/Pardus-Flight-Computer/raw/main/utility/helpers.js
 // @downloadURL     https://github.com/Tro95/Pardus-Flight-Computer/raw/main/pardus_flight_computer.user.js
 // @updateURL       https://github.com/Tro95/Pardus-Flight-Computer/raw/main/pardus_flight_computer.meta.js
 // ==/UserScript==
@@ -274,6 +274,43 @@ function optionsPage() {
 
     recording_box.innerHtml = get_recording_box_html();
     recording_box.addAfterRefreshHook(recordingAfterRefresh);
+
+    const mapper_box = pardus_flight_computer_tab.addBox({
+        heading: 'Mapper',
+        description: 'The links below let you view the currently-stored route.'
+    });
+
+    function get_mapper_box_html() {
+        const coloured_tiles_to_highlight = PardusOptionsUtility.getVariableValue('tiles_to_highlight', '').split(',');
+        const tiles_to_highlight = [];
+
+        console.log(coloured_tiles_to_highlight);
+        console.log(tiles_to_highlight);
+
+        for (const tile of coloured_tiles_to_highlight) {
+            if (tile) {
+                tiles_to_highlight.push(tile.split('|')[0]);
+            }
+        }
+
+        const mapper_urls = mapper_urls_from_route(tiles_to_highlight);
+
+        let html = '<tr><td><div><table width="100%"><tbody>';
+
+        for (const sector in mapper_urls) {
+            html += `<tr><td>${sector}</td><td><a href="${mapper_urls[sector]}" target="_blank">${mapper_urls[sector]}</a></td></tr>`;
+        }
+
+        if (Object.keys(mapper_urls).length === 0) {
+            html += `<tr><td>No sectors detected in the currently-stored route.</td></tr>`;
+        }
+
+        html += '</tbody></table></div></td></tr>';
+
+        return html;
+    }
+
+    mapper_box.innerHtml = get_mapper_box_html();
 
     pardus_flight_computer_tab.refreshElement();
 }

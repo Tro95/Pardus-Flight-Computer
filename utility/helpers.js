@@ -4,6 +4,10 @@ function mapper_urls_from_route(route = []) {
     for (const index in route) {
         const tile_obj = get_sector_coords_obj(route[index]);
 
+        if (!tile_obj) {
+            console.log(`No tile object for ${route[index]}`);
+        }
+
         if (!sector_routes[tile_obj.sector]) {
             sector_routes[tile_obj.sector] = [];
         }
