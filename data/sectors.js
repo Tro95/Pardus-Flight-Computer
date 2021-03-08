@@ -7,6 +7,19 @@ function get_sector_coords(tile_id) {
     }
 }
 
+function get_sector_coords_obj(tile_id) {
+    for (const index in sectorMapDataObj) {
+        const sector = sectorMapDataObj[index];
+        if (tile_id >= sector.start && tile_id < sector.start + (sector.cols * sector.rows)) {
+            return {
+                'sector': index,
+                'x': Math.floor((tile_id - sector.start) / sector.rows),
+                'y': (tile_id - sector.start) % sector.rows
+            }
+        }
+    }
+}
+
 /* return the tile id given the current sector name and coordinates */
 function getTileIdFromSectorAndCoords(sector, x, y) {
 
