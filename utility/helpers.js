@@ -12,10 +12,10 @@ function mapper_urls_from_route(route = []) {
     }
 
 
-    const mapper_urls = [];
+    const mapper_urls = {};
 
     for (const sector_route_index in sector_routes) {
-        mapper_urls.push(mapper_url_from_values(sector_route_index, sector_routes[sector_route_index]));
+        mapper_urls[sector_route_index] = mapper_url_from_values(sector_route_index, sector_routes[sector_route_index]);
     }
 
     return mapper_urls;
