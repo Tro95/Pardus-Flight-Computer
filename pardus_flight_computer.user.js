@@ -298,7 +298,7 @@ function optionsPage() {
         let html = '<tr><td><div><table width="100%"><tbody>';
 
         for (const sector in mapper_urls) {
-            html += `<tr><td>${sector}</td><td><a href="${mapper_urls[sector]}" target="_blank">${mapper_urls[sector]}</a></td></tr>`;
+            html += `<tr><td>${sector}</td><td style="word-wrap: anywhere;"><a href="${mapper_urls[sector]}" target="_blank">${mapper_urls[sector]}</a></td></tr>`;
         }
 
         if (Object.keys(mapper_urls).length === 0) {
