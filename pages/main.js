@@ -72,7 +72,7 @@ class MainPage {
         for (const nav_tile of nav_tiles) {
             const tile_id = nav_tile.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
             if (this.tile_set.has(tile_id)) {
-                highlightTileInPath(nav_tile.parentNode, this.tile_set.get(tile_id));
+                this.highlightTileInPath(nav_tile.parentNode, this.tile_set.get(tile_id));
             }
         }
 
@@ -127,16 +127,16 @@ class MainPage {
         if( background_image ) {
             // don't do this twice
             if( !highlight_regex.test(background_image) ) {
-                td.style.backgroundImage = `linear-gradient(to bottom, rgba(${flattened_colours[colour]},0.5), rgba(${flattened_colours[colour]},0.5)), ` + background_image;
+                td.style.backgroundImage = `linear-gradient(to bottom, rgba(${this.flattened_colours[colour]},0.5), rgba(${this.flattened_colours[colour]},0.5)), ` + background_image;
                 td.addEventListener('mouseenter', () => {
-                    td.style.backgroundImage = `linear-gradient(to bottom, rgba(${flattened_colours[colour]},0.8), rgba(${flattened_colours[colour]},0.8)), ` + background_image;
+                    td.style.backgroundImage = `linear-gradient(to bottom, rgba(${this.flattened_colours[colour]},0.8), rgba(${this.flattened_colours[colour]},0.8)), ` + background_image;
                 });
                 td.addEventListener('mouseleave', () => {
-                    td.style.backgroundImage = `linear-gradient(to bottom, rgba(${flattened_colours[colour]},0.5), rgba(${flattened_colours[colour]},0.5)), ` + background_image;
+                    td.style.backgroundImage = `linear-gradient(to bottom, rgba(${this.flattened_colours[colour]},0.5), rgba(${this.flattened_colours[colour]},0.5)), ` + background_image;
                 });
             }
         } else {
-            td.style.backgroundColor = `rgba(${flattened_colours[colour]},1)`;
+            td.style.backgroundColor = `rgba(${this.flattened_colours[colour]},1)`;
             var img = td.firstElementChild;
             img.style.opacity = 0.5;
             img.addEventListener('mouseenter', () => {
