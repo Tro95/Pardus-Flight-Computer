@@ -47,90 +47,86 @@ class OptionsPage {
             description: 'Record the path you fly'
         });
 
-        this.recording_box.innerHtml = get_recording_box_html();
-        this.recording_box.addAfterRefreshHook(recordingAfterRefresh);
+        this.recording_box.innerHtml = OptionsPage.get_recording_box_html();
+        this.recording_box.addAfterRefreshHook(() => {this.recordingAfterRefresh(this.recording_box)});
 
         this.mapper_box = this.pardus_flight_computer_tab.addBox({
             heading: 'Mapper',
             description: 'The links below let you view the currently-stored route.'
         });
 
-        this.mapper_box.innerHtml = get_mapper_box_html();
+        this.mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
 
         this.pardus_flight_computer_tab.refreshElement();
+    }
 
-        function recordingAfterRefresh() {
-            const record_button = document.getElementById('pardus-flight-computer-record-button');
-            const clear_button = document.getElementById('pardus-flight-computer-clear-recording-output');
+    recordingAfterRefresh(recording_box) {
+        const record_button = document.getElementById('pardus-flight-computer-record-button');
+        const clear_button = document.getElementById('pardus-flight-computer-clear-recording-output');
 
-            record_button.addEventListener('click', recordingClickHandler);
-            clear_button.addEventListener('click', clearClickHandler);
-        }
-
-        function recordingClickHandler() {
+        record_button.addEventListener('click', () => {
             const recording = PardusOptionsUtility.getVariableValue('recording', false);
             PardusOptionsUtility.setVariableValue('recording', !recording);
-            this.recording_box.innerHtml = get_recording_box_html();
-            this.recording_box.refreshElement();
-        }
+            recording_box.innerHtml = OptionsPage.get_recording_box_html();
+            recording_box.refreshElement();
+        });
 
-        function clearClickHandler() {
+        clear_button.addEventListener('click', () => {
             PardusOptionsUtility.setVariableValue('recorded_tiles', []);
-            this.recording_box.innerHtml = get_recording_box_html();
-            this.recording_box.refreshElement();
+            recording_box.innerHtml = OptionsPage.get_recording_box_html();
+            recording_box.refreshElement();
+        });
+    }
+
+    static get_recording_box_html() {
+        const offset = '-2px';
+        const off_blob = `<img src="data:image/png,%89PNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%0B%00%00%00%0D%08%03%00%00%00H%2Bd%09%00%00%00lPLTE%FF%FF%FF%D3%D3%D3%BB%BB%BB%9B%9B%9B%91%91%91%90%90%90%82%82%82%80%80%80~~~%7D%7D%7DuuullljjjgggbbbaaaUUUSSSMMMGGGDDD%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%2F%E3%EE%3C%00%00%00%16tRNS%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%00%01%D2%C0%E4%00%00%00_IDATx%DAT%8DI%0E%C0%20%0C%03%034%10%F6%00%E1%FF_-%B4%87R%9F%AC%915%86%F9%05%FE%5Dz%E3%D6e%F7%C1%25%C5TxL%10%CE%81%9C%0F%99%05z%0D%16%0D%DAP%3A%B4D%A8%95FJ%0D8%3A%A3%40%19%17yq%BF%F9%B5%F9%B9%7F%3D%F4x%96%BF.%7F%DD%FE%E3%F7%16%60%00%8E%9C%07%C8%8B%B1%7B%ED%00%00%00%00IEND%AEB%60%82" style="vertical-align:${offset};" alt="Off bloc created by Takius Stargazer" border="0">`;
+        const on_blob = `<img src="data:image/png,%89PNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%0B%00%00%00%0D%08%03%00%00%00H%2Bd%09%00%00%00%7BPLTE%EF%00%01%DD%00%01%C5%00%01%B4%00%01%9A%00%01%95%00%01%88%00%01%7D%00%01%F9%00%00%F4%00%00%F4%01%00%EF%01%00%EE%00%00%DD%00%00%DD%01%00%CB%00%00%CB%01%00%C5%00%00%C5%01%00%BF%00%00%B4%00%00%B4%01%00%B3%00%00%9A%00%00%9A%01%00%99%00%00%95%00%00%88%00%00%88%01%00%7D%00%00%7D%01%00w%00%00v%00%00%FF%17%17%FF%18%18%FF--%FFpp%FFqq%FF%A3%A3%FF%FF%FF%FF%FF%FF%D1%8Fv%E3%00%00%00)tRNS%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%00R%F4%20%87%00%00%00wIDATx%DAT%8D%D1%0E%C2%20%14C%AB%E2%1C2D%C0%E1%B8%E8%04%99%C8%FF%7F%A1%98%18%8D%7D%3Ai%9A%1E%D4_%F0%CF1%D0%99.%F1%CDW%B6Y%2B%7D%F2%BB%8A%C8%AC%04%1F%A4%9Dn%08N%F6)%A7%FE0v%20%23%D2R%96%24%0C%C1%1Fy.%CF%92%F7j%02%E9%A1%F5%8F%BB%D0%F4%DD%CB1%20z%BB%12%1C%ED\'%A2%CE%DE%19%A5%9D%9F%3F%5E%B6%ED%9A%F7%25%C0%00%C0~%0Ek%A4Y%8A%96%00%00%00%00IEND%AEB%60%82" style="vertical-align:${offset};" alt="On blob created by Takius Stargazer" border="0">`;
+        const record_button_id = 'pardus-flight-computer-record-button';
+
+        let recording = PardusOptionsUtility.getVariableValue('recording', false);
+
+        let recording_status = `${off_blob}&nbsp;Not recording`;
+        let button_text = 'Start recording';
+        let recording_output = PardusOptionsUtility.getVariableValue('recorded_tiles', []).join(',');
+
+        if (recording_output === '') {
+            recording_output = 'No tiles recorded';
         }
 
-        function get_recording_box_html() {
-            const offset = '-2px';
-            const off_blob = `<img src="data:image/png,%89PNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%0B%00%00%00%0D%08%03%00%00%00H%2Bd%09%00%00%00lPLTE%FF%FF%FF%D3%D3%D3%BB%BB%BB%9B%9B%9B%91%91%91%90%90%90%82%82%82%80%80%80~~~%7D%7D%7DuuullljjjgggbbbaaaUUUSSSMMMGGGDDD%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%00%2F%E3%EE%3C%00%00%00%16tRNS%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%00%01%D2%C0%E4%00%00%00_IDATx%DAT%8DI%0E%C0%20%0C%03%034%10%F6%00%E1%FF_-%B4%87R%9F%AC%915%86%F9%05%FE%5Dz%E3%D6e%F7%C1%25%C5TxL%10%CE%81%9C%0F%99%05z%0D%16%0D%DAP%3A%B4D%A8%95FJ%0D8%3A%A3%40%19%17yq%BF%F9%B5%F9%B9%7F%3D%F4x%96%BF.%7F%DD%FE%E3%F7%16%60%00%8E%9C%07%C8%8B%B1%7B%ED%00%00%00%00IEND%AEB%60%82" style="vertical-align:${offset};" alt="Off bloc created by Takius Stargazer" border="0">`;
-            const on_blob = `<img src="data:image/png,%89PNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%0B%00%00%00%0D%08%03%00%00%00H%2Bd%09%00%00%00%7BPLTE%EF%00%01%DD%00%01%C5%00%01%B4%00%01%9A%00%01%95%00%01%88%00%01%7D%00%01%F9%00%00%F4%00%00%F4%01%00%EF%01%00%EE%00%00%DD%00%00%DD%01%00%CB%00%00%CB%01%00%C5%00%00%C5%01%00%BF%00%00%B4%00%00%B4%01%00%B3%00%00%9A%00%00%9A%01%00%99%00%00%95%00%00%88%00%00%88%01%00%7D%00%00%7D%01%00w%00%00v%00%00%FF%17%17%FF%18%18%FF--%FFpp%FFqq%FF%A3%A3%FF%FF%FF%FF%FF%FF%D1%8Fv%E3%00%00%00)tRNS%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%FF%00R%F4%20%87%00%00%00wIDATx%DAT%8D%D1%0E%C2%20%14C%AB%E2%1C2D%C0%E1%B8%E8%04%99%C8%FF%7F%A1%98%18%8D%7D%3Ai%9A%1E%D4_%F0%CF1%D0%99.%F1%CDW%B6Y%2B%7D%F2%BB%8A%C8%AC%04%1F%A4%9Dn%08N%F6)%A7%FE0v%20%23%D2R%96%24%0C%C1%1Fy.%CF%92%F7j%02%E9%A1%F5%8F%BB%D0%F4%DD%CB1%20z%BB%12%1C%ED\'%A2%CE%DE%19%A5%9D%9F%3F%5E%B6%ED%9A%F7%25%C0%00%C0~%0Ek%A4Y%8A%96%00%00%00%00IEND%AEB%60%82" style="vertical-align:${offset};" alt="On blob created by Takius Stargazer" border="0">`;
-            const record_button_id = 'pardus-flight-computer-record-button';
-
-            let recording = PardusOptionsUtility.getVariableValue('recording', false);
-
-            let recording_status = `${off_blob}&nbsp;Not recording`;
-            let button_text = 'Start recording';
-            let recording_output = PardusOptionsUtility.getVariableValue('recorded_tiles', []).join(',');
-
-            if (recording_output === '') {
-                recording_output = 'No tiles recorded';
-            }
-
-            if (recording) {
-                recording_status = `${on_blob}&nbsp;<font color='red'>Recording</font>`;
-                button_text = 'Stop recording';
-            }
-
-            let html = `<tr><td><div><table width="100%"><tbody><tr><td width="1%" style="white-space: nowrap;">Recording status:</td><td><div id="pardus-flight-computer-recording-status">${recording_status}</div></td><td align="right"><input type="button" value="${button_text}" id="${record_button_id}"></td></tr><tr><td colspan="3"><pre id="pardus-flight-computer-recording-output" style="padding: 5px; border-style: dashed; border-color: yellow; border-width: thin; white-space: pre-wrap; word-wrap: anywhere;">${recording_output}</pre></td></tr><tr><td align="right" colspan="3"><input value="Clear" id="pardus-flight-computer-clear-recording-output" type="button"></td></tr></tbody></table></div></td></tr>`; 
-            return html;
+        if (recording) {
+            recording_status = `${on_blob}&nbsp;<font color='red'>Recording</font>`;
+            button_text = 'Stop recording';
         }
 
-        function get_mapper_box_html() {
-            const coloured_tiles_to_highlight = PardusOptionsUtility.getVariableValue('tiles_to_highlight', '').split(',');
-            const tiles_to_highlight = [];
+        let html = `<tr><td><div><table width="100%"><tbody><tr><td width="1%" style="white-space: nowrap;">Recording status:</td><td><div id="pardus-flight-computer-recording-status">${recording_status}</div></td><td align="right"><input type="button" value="${button_text}" id="${record_button_id}"></td></tr><tr><td colspan="3"><pre id="pardus-flight-computer-recording-output" style="padding: 5px; border-style: dashed; border-color: yellow; border-width: thin; white-space: pre-wrap; word-wrap: anywhere;">${recording_output}</pre></td></tr><tr><td align="right" colspan="3"><input value="Clear" id="pardus-flight-computer-clear-recording-output" type="button"></td></tr></tbody></table></div></td></tr>`; 
+        return html;
+    }
 
-            for (const tile of coloured_tiles_to_highlight) {
-                if (tile) {
-                    tiles_to_highlight.push(tile.split('|')[0]);
-                }
+    static get_mapper_box_html() {
+        const coloured_tiles_to_highlight = PardusOptionsUtility.getVariableValue('tiles_to_highlight', '').split(',');
+        const tiles_to_highlight = [];
+
+        for (const tile of coloured_tiles_to_highlight) {
+            if (tile) {
+                tiles_to_highlight.push(tile.split('|')[0]);
             }
-
-            const mapper_urls = mapper_urls_from_route(tiles_to_highlight);
-
-            let html = '<tr><td><div><table width="100%"><tbody>';
-
-            for (const sector in mapper_urls) {
-                html += `<tr><td>${sector}</td><td style="word-wrap: anywhere;"><a href="${mapper_urls[sector]}" target="_blank">${mapper_urls[sector]}</a></td></tr>`;
-            }
-
-            if (Object.keys(mapper_urls).length === 0) {
-                html += `<tr><td>No sectors detected in the currently-stored route.</td></tr>`;
-            }
-
-            html += '</tbody></table></div></td></tr>';
-
-            return html;
         }
 
+        const mapper_urls = mapper_urls_from_route(tiles_to_highlight);
+
+        let html = '<tr><td><div><table width="100%"><tbody>';
+
+        for (const sector in mapper_urls) {
+            html += `<tr><td>${sector}</td><td style="word-wrap: anywhere;"><a href="${mapper_urls[sector]}" target="_blank">${mapper_urls[sector]}</a></td></tr>`;
+        }
+
+        if (Object.keys(mapper_urls).length === 0) {
+            html += `<tr><td>No sectors detected in the currently-stored route.</td></tr>`;
+        }
+
+        html += '</tbody></table></div></td></tr>';
+
+        return html;
     }
 }
