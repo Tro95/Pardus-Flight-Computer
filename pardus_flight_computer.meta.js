@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Pardus Flight Computer
-// @version         0.3.2
+// @version         0.3.3
 // @description     Flight Computer to assist pathfinding in Pardus
 // @author          Tro (Artemis)
 // @include         http*://*.pardus.at/main.php
