@@ -1,5 +1,329 @@
 /* global PardusOptionsUtility, colours */
 
+class Tile {
+    constructor(element, x, y) {
+        this.element = element;
+        this.x = x;
+        this.y = y;
+        this.background_image = this.element.style.backgroundImage;
+        this.highlight_string = '';
+        this.highlights = [];
+        this.emphasised = false;
+
+        const unhighlight_regex = /^\s*linear-gradient.*?, (url\(.*)$/;
+
+        if (unhighlight_regex.test(this.background_image)) {
+            this.background_image = this.background_image.match(unhighlight_regex)[1]
+        }
+
+        // Get the tile id
+        if (this.element.classList.contains('navShip')) {
+            this.tile_id = userloc.toString();
+        } else if (this.element.children.length > 0 && this.element.children[0].tagName === 'A') {
+
+            const child_element = this.element.children[0];
+
+            // Can we navigate to the tile?
+            if (child_element.getAttribute('onclick') === null || child_element.getAttribute('onclick').startsWith('warp')) {
+                this.tile_id = userloc.toString();
+            } else if (child_element.getAttribute('onclick').startsWith('nav')) {
+                this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1]; 
+            }
+        }
+
+        this.addRecordHandler();
+    }
+
+    isClickable() {
+        if (this.tile_id && parseInt(this.tile_id) > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    isNavigatable() {
+        if (this.isClickable() && this.element.children[0].getAttribute('onclick') && this.element.children[0].getAttribute('onclick').startsWith('nav')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    isHighlighted() {
+        if (this.highlights.length > 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    addRecordHandler() {
+        const tile_id_to_add = this.tile_id;
+
+        this.addEventListener('click', () => {
+            if (PardusOptionsUtility.getVariableValue('recording', false)) {
+                const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
+                recorded_tiles.add(tile_id_to_add);
+                PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
+            }
+        });
+    }
+
+    addEventListener(event, func) {
+        if (this.isNavigatable()) {
+            this.element.children[0].addEventListener(event, func);
+        }
+    }
+
+    highlight(highlight_colour = 'g') {
+
+        for (const colour in colours) {
+            if (colours[colour].short_code === highlight_colour) {
+                this.highlights.push({
+                    red: colours[colour].red,
+                    green: colours[colour].green,
+                    blue: colours[colour].blue
+                });
+                break;
+            }
+        }
+
+        this._refreshHighlightStatus();
+    }
+
+    isEmphasised() {
+        return this.emphasised;
+    }
+
+    emphasiseHighlight() {
+        this.emphasised = true;
+        this._refreshHighlightStatus();
+    }
+
+    removeEmphasis() {
+        this.emphasised = false;
+        this._refreshHighlightStatus();
+    }
+
+    removeHighlight(highlight_colour = 'g') {
+        const colour_to_remove = {
+            red: 0,
+            green: 0,
+            blue: 0
+        }
+
+        for (const colour in colours) {
+            if (colours[colour].short_code === highlight_colour) {
+                colour_to_remove.red = colours[colour].red;
+                colour_to_remove.green = colours[colour].green;
+                colour_to_remove.blue = colours[colour].blue;
+                break;
+            }
+        }
+
+        for (const index in this.highlights) {
+            if (this.highlights[index].red === colour_to_remove.red && this.highlights[index].green === colour_to_remove.green && this.highlights[index].blue === colour_to_remove.blue) {
+                this.highlights.splice(index, 1);
+            }
+        }
+
+        this._refreshHighlightStatus();
+    }
+
+    _refreshHighlightStatus() {
+
+        if (this.highlights.length === 0) {
+            return this._clearAllHighlighting();
+        }
+
+        const highlighted_colour_string = this._getHighlightedColourString();
+        const emphasis = this.emphasised ? 0.8 : 0.5;
+
+        // Does this tile have a background image?
+        if (this.background_image) {
+            this.element.style.backgroundImage = `linear-gradient(to bottom, rgba(${highlighted_colour_string},${emphasis}), rgba(${highlighted_colour_string},${emphasis})), ` + this.background_image;
+        } else {
+            this.element.style.backgroundColor = `rgba(${highlighted_colour_string},1)`;
+            this.element.firstElementChild.style.opacity = 1 - emphasis;
+        }
+    }
+
+    _clearAllHighlighting() {
+        if (this.background_image) {
+            this.element.style.backgroundImage = this.background_image;
+        } else {
+            this.element.style.backgroundColor = ''
+            this.element.firstElementChild.style.opacity = 1;
+        }
+
+        return true;  
+    }
+
+    _getHighlightedColourString() {
+
+        let total_red = 0;
+        let total_green = 0;
+        let total_blue = 0;
+
+        let number_red = 0;
+        let number_green = 0;
+        let number_blue = 0;
+
+        for (const colour of this.highlights) {
+            total_red += colour.red;
+            total_green += colour.green;
+            total_blue += colour.blue;
+
+            if (colour.red > 0) {
+                number_red += 1;
+            }
+
+            if (colour.green > 0) {
+                number_green += 1;
+            }
+
+            if (colour.blue > 0) {
+                number_blue += 1;
+            }
+        }
+
+        if (number_red === 0) {
+            number_red = 1;
+        }
+
+        if (number_green === 0) {
+            number_green = 1;
+        }
+
+        if (number_blue === 0) {
+            number_blue = 1;
+        }
+
+        return `${Math.floor(total_red / number_red)},${Math.floor(total_green / number_green)},${Math.floor(total_blue / number_blue)}`;
+    }
+}
+
+class NavArea {
+    constructor(tiles_to_highlight = new Map()) {
+        this.tiles_to_highlight = tiles_to_highlight;
+        this.reload();
+    }
+
+    getPath(tile) {
+
+        const path_routing = [this.centre_tile];
+
+        for (let step = 0; step < Math.max(Math.abs(this.centre_tile.x - tile.x), Math.abs(this.centre_tile.y - tile.y)); step++) {
+
+            const current_tile = path_routing[step];
+
+            let direction_x = 0;
+            let direction_y = 0;
+
+            // Which way do we want to move?
+            if (current_tile.x > tile.x) {
+                direction_x = -1;
+            } else if (current_tile.x < tile.x) {
+                direction_x = 1;
+            }
+
+            if (current_tile.y > tile.y) {
+                direction_y = -1;
+            } else if (current_tile.y < tile.y) {
+                direction_y = 1;
+            }
+
+            path_routing.push(this.grid[current_tile.y + direction_y][current_tile.x + direction_x]);
+        }
+
+        return path_routing;
+    }
+
+    reload() {
+        this.nav_element = document.getElementById('navareatransition');
+
+        if (!this.nav_element || this.nav_element.style.display === "none") {
+            this.nav_element = document.getElementById('navarea');
+        }
+
+        this.height = this.nav_element.rows.length;
+        this.width = this.nav_element.rows[0].childElementCount;
+
+        this.grid = [];
+
+        for (const row of this.nav_element.rows) {
+            const row_arr = [];
+
+            for (const tile_td of row.children) {
+                const tile_number = parseInt(tile_td.id.match(/[^\d]*(\d*)/)[1]);
+                const tile_x = tile_number % this.width;
+                const tile_y = Math.floor(tile_number / this.width);
+
+                const tile = new Tile(tile_td, tile_x, tile_y);
+
+                row_arr.push(tile);
+            }
+
+            this.grid.push(row_arr);
+        }
+
+        const centre_x = Math.floor(this.width / 2);
+        const centre_y = Math.floor(this.height / 2);
+
+        this.centre_tile = this.grid[centre_y][centre_x];
+        this._highlightTiles();
+
+        if (PardusOptionsUtility.getVariableValue('show_pathing', true)) {
+            this._addPathFinding();
+        }
+    }
+
+    * clickableTiles() {
+        for (const row of this.grid) {
+            for (const tile of row) {
+                if (tile.isClickable()) {
+                    yield tile;
+                }
+            }
+        }
+    }
+
+    _highlightTiles() {
+        for (const tile of this.clickableTiles()) {
+            if (this.tiles_to_highlight.has(tile.tile_id)) {
+                tile.highlight(this.tiles_to_highlight.get(tile.tile_id));
+            }
+        }
+    }
+
+    _addPathFinding() {
+        for (const tile of this.clickableTiles()) {
+            const path = this.getPath(tile);
+
+            tile.addEventListener('mouseenter', () => {
+                for (const path_tile of path) {
+                    if (path_tile.isHighlighted()) {
+                        path_tile.emphasiseHighlight();
+                    } else {
+                        path_tile.highlight(PardusOptionsUtility.getVariableValue('default_path_colour', 'y'));
+                    }
+                }
+            });
+
+            tile.addEventListener('mouseleave', () => {
+                for (const path_tile of path) {
+                    if (path_tile.isEmphasised()) {
+                        path_tile.removeEmphasis();
+                    } else {
+                        path_tile.removeHighlight(PardusOptionsUtility.getVariableValue('default_path_colour', 'y'));
+                    }
+                }
+            });
+        }
+    }
+}
+
 class MainPage {
 
     constructor() {
@@ -18,18 +342,15 @@ class MainPage {
             }
         }
 
-        this.flattened_colours = {};
+        this.nav_area = new NavArea(this.tile_set);
 
-        for (const colour in colours) {
-            this.flattened_colours[colours[colour].short_code] = colours[colour].rgb;
-        }
-
-        this.handle_partial_refresh();
-        this.highlightTiles();
-        this.add_record_handler();
+        //this.nav_area.highlightTiles();
+        this.handle_partial_refresh(() => {
+            this.nav_area.reload();
+        });
     }
 
-    handle_partial_refresh() {
+    handle_partial_refresh(func) {
         const nav_element = document.getElementById('tdSpaceChart').getElementsByTagName('table')[0];
 
         // Options for the observer (which mutations to observe)
@@ -37,114 +358,13 @@ class MainPage {
 
         // Callback function to execute when mutations are observed
         const callback = function(mutationsList, observer) {
-            this.highlightTiles();
+            func();
         };
 
         // Create an observer instance linked to the callback function
         const observer = new MutationObserver(callback);
 
         // Start observing the target node for configured mutations
-        observer.observe(nav_element, config);        
-    }
-
-    add_record_handler() {
-        const clickable_tiles = document.querySelectorAll('a[onclick^="nav"]');
-
-        for (const clickable_tile of clickable_tiles) {
-            const tile_id = clickable_tile.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
-
-            clickable_tile.addEventListener('click', () => {
-                if (PardusOptionsUtility.getVariableValue('recording', false)) {
-                    const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
-
-                    recorded_tiles.add(tile_id);
-
-                    PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
-                }
-               
-            });
-        }
-    }
-
-    highlightTiles() {
-        const nav_tiles = document.querySelectorAll('a[onclick^="nav"]');
-
-        for (const nav_tile of nav_tiles) {
-            const tile_id = nav_tile.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
-            if (this.tile_set.has(tile_id)) {
-                this.highlightTileInPath(nav_tile.parentNode, this.tile_set.get(tile_id));
-            }
-        }
-
-        /* global userloc */
-        if (this.tile_set.has(userloc.toString())) {
-            // most tiles
-            let nav_tile = document.querySelector('#navtransition a:not([onclick])');
-
-            // Try the #navtransition element first, in case we're using partial refresh
-            if (!nav_tile) {
-                nav_tile = document.querySelector('#navtransition a:not([onclick])');
-            }
-
-            // wormholes
-            if (!nav_tile) {
-                nav_tile = document.querySelector('#navtransition a[onclick^="warp"]');
-            }
-
-            // ship on an empty tile
-            if (!nav_tile) {
-                nav_tile = document.querySelector('#navtransition td.navShip a');
-            }
-
-            // If we get here, it's likely we're not using partial refresh
-            if (!nav_tile) {
-                nav_tile = document.querySelector('#navarea a:not([onclick])');
-            }
-
-            // wormholes
-            if (!nav_tile) {
-                nav_tile = document.querySelector('#navarea a[onclick^="warp"]');
-            }
-
-            // ship on an empty tile
-            if (!nav_tile) {
-                nav_tile = document.querySelector('#navarea td.navShip > img');
-            }
-
-            this.highlightTileInPath(nav_tile.parentNode, this.tile_set.get(userloc.toString()));
-        }
-        
-        this.add_record_handler();
-    }
-
-    highlightTileInPath( td, colour = 'g' ) {
-
-        // With credit to Pardus Sweetener
-        const highlight_regex = /^\s*linear-gradient/;
-        const unhighlight_regex = /^\s*linear-gradient.*?, (url\(.*)$/;
-
-        var background_image = td.style.backgroundImage;
-        if( background_image ) {
-            // don't do this twice
-            if( !highlight_regex.test(background_image) ) {
-                td.style.backgroundImage = `linear-gradient(to bottom, rgba(${this.flattened_colours[colour]},0.5), rgba(${this.flattened_colours[colour]},0.5)), ` + background_image;
-                td.addEventListener('mouseenter', () => {
-                    td.style.backgroundImage = `linear-gradient(to bottom, rgba(${this.flattened_colours[colour]},0.8), rgba(${this.flattened_colours[colour]},0.8)), ` + background_image;
-                });
-                td.addEventListener('mouseleave', () => {
-                    td.style.backgroundImage = `linear-gradient(to bottom, rgba(${this.flattened_colours[colour]},0.5), rgba(${this.flattened_colours[colour]},0.5)), ` + background_image;
-                });
-            }
-        } else {
-            td.style.backgroundColor = `rgba(${this.flattened_colours[colour]},1)`;
-            var img = td.firstElementChild;
-            img.style.opacity = 0.5;
-            img.addEventListener('mouseenter', () => {
-                img.style.opacity = 0.2;
-            });
-            img.addEventListener('mouseleave', () => {
-                img.style.opacity = 0.5;
-            });
-        }
+        observer.observe(nav_element, config);
     }
 }

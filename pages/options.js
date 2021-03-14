@@ -9,8 +9,8 @@ class OptionsPage {
         });
 
         this.tile_highlight_box = this.pardus_flight_computer_tab.addBox({
-            heading: 'Tile Highlights',
-            description: 'Specific tiles to highlight',
+            heading: 'Route Highlighting',
+            description: 'Highlights a specified route',
             resetButton: true
         });
 
@@ -21,6 +21,27 @@ class OptionsPage {
             cols: 65,
             rows: 3
         });
+
+
+        this.path_highlight_box = this.pardus_flight_computer_tab.addBox({
+            heading: 'Path Highlighting',
+            description: 'Highlights a specified route',
+        });
+
+        this.path_highlight_box.addBooleanOption({
+            variable: 'show_pathing',
+            description: 'Highlights the path you will fly',
+            defaultValue: true
+        });
+
+
+        this.recording_box = this.pardus_flight_computer_tab.addBox({
+            heading: 'Recording',
+            description: 'Record the path you fly'
+        });
+
+        this.recording_box.innerHtml = OptionsPage.get_recording_box_html();
+        this.recording_box.addAfterRefreshHook(() => {this.recordingAfterRefresh(this.recording_box)});
 
         this.colours_box = this.pardus_flight_computer_tab.addBox({
             heading: 'Colours',
@@ -37,18 +58,17 @@ class OptionsPage {
 
         this.colours_box.addSelectOption({
             variable: 'default_colour',
-            description: 'The default colour to highlight',
+            description: 'The default colour for route highlighting',
             options: this.colours_selection,
             defaultValue: 'g'
         });
 
-        this.recording_box = this.pardus_flight_computer_tab.addBox({
-            heading: 'Recording',
-            description: 'Record the path you fly'
+        this.colours_box.addSelectOption({
+            variable: 'default_path_colour',
+            description: 'The default colour for path highlighting',
+            options: this.colours_selection,
+            defaultValue: 'y'
         });
-
-        this.recording_box.innerHtml = OptionsPage.get_recording_box_html();
-        this.recording_box.addAfterRefreshHook(() => {this.recordingAfterRefresh(this.recording_box)});
 
         this.mapper_box = this.pardus_flight_computer_tab.addBox({
             heading: 'Mapper',
