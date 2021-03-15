@@ -1,4 +1,4 @@
-/* global PardusOptionsUtility, colours */
+/* global PardusOptionsUtility, colours, userloc */
 
 class Tile {
     constructor(element, x, y) {
@@ -284,7 +284,7 @@ class NavArea {
             for (const tile of row) {
                 yield tile;
             }
-        }        
+        }
     }
 
     * clickableTiles() {
@@ -315,9 +315,16 @@ class NavArea {
     }
 
     _highlightTiles() {
+
+        const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
+        const colour_recorded_tiles = PardusOptionsUtility.getVariableValue('colour_recorded_tiles', true);
+        const recorded_tile_colour = PardusOptionsUtility.getVariableValue('recorded_tile_colour', 'b');
+
         for (const tile of this.clickableTiles()) {
             if (this.tiles_to_highlight.has(tile.tile_id)) {
                 tile.highlight(this.tiles_to_highlight.get(tile.tile_id));
+            } else if (colour_recorded_tiles && recorded_tiles.has(tile.tile_id)) {
+                tile.highlight(recorded_tile_colour);
             }
         }
     }
