@@ -30,8 +30,6 @@ class Tile {
                 this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1]; 
             }
         }
-
-        this.addRecordHandler();
     }
 
     isClickable() {
@@ -162,6 +160,7 @@ class Tile {
 
     _getHighlightedColourString() {
 
+        // This is probably the world's worst colour-mixing algorithm
         let total_red = 0;
         let total_green = 0;
         let total_blue = 0;
@@ -273,19 +272,45 @@ class NavArea {
 
         this.centre_tile = this.grid[centre_y][centre_x];
         this._highlightTiles();
+        this._addRecording();
 
         if (PardusOptionsUtility.getVariableValue('show_pathing', true)) {
             this._addPathFinding();
         }
     }
 
-    * clickableTiles() {
+    * tiles() {
         for (const row of this.grid) {
             for (const tile of row) {
-                if (tile.isClickable()) {
-                    yield tile;
-                }
+                yield tile;
             }
+        }        
+    }
+
+    * clickableTiles() {
+        for (const tile of this.tiles()) {
+            if (tile.isClickable()) {
+                yield tile;
+            }
+        }
+    }
+
+    _addRecording() {
+        for (const tile of this.clickableTiles()) {
+
+            const path = this.getPath(tile);
+
+            tile.addEventListener('click', () => {
+                if (PardusOptionsUtility.getVariableValue('recording', false)) {
+                    const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
+
+                    for (const flown_tile of path) {
+                        recorded_tiles.add(flown_tile.tile_id);
+                    }
+
+                    PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
+                }
+            });
         }
     }
 
@@ -344,7 +369,6 @@ class MainPage {
 
         this.nav_area = new NavArea(this.tile_set);
 
-        //this.nav_area.highlightTiles();
         this.handle_partial_refresh(() => {
             this.nav_area.reload();
         });
