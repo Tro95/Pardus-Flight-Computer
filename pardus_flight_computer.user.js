@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Pardus Flight Computer
-// @version         0.4.1
+// @version         0.5
 // @description     Flight Computer to assist pathfinding in Pardus
 // @author          Tro (Artemis)
 // @include         http*://*.pardus.at/main.php
@@ -8,13 +8,13 @@
 // @grant           GM_setValue
 // @grant           GM_getValue
 // @require         https://raw.githubusercontent.com/Tro95/Pardus-Options-Library/v2.5/pardus_options_library.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/data/colours.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/data/sectors.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/pages/options.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/pages/main.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/utility/helpers.js
-// @downloadURL     https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/pardus_flight_computer.user.js
-// @updateURL       https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/pardus_flight_computer.meta.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.5/data/colours.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.5/data/sectors.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.5/pages/options.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.5/pages/main.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.5/utility/helpers.js
+// @downloadURL     https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.5/pardus_flight_computer.user.js
+// @updateURL       https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.5/pardus_flight_computer.meta.js
 // ==/UserScript==
 
 switch (document.location.pathname) {
