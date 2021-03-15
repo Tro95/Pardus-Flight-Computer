@@ -7,7 +7,7 @@
 // @include         http*://*.pardus.at/options.php
 // @grant           GM_setValue
 // @grant           GM_getValue
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Options-Library/v2.4/pardus_options_library.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Options-Library/v2.5/pardus_options_library.js
 // @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/data/colours.js
 // @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/data/sectors.js
 // @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.4.1/pages/options.js
