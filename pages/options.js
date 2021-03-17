@@ -21,7 +21,8 @@ class OptionsPage {
         for (const colour in colours) {
             this.colours_selection.push({
                 value: colours[colour].short_code,
-                text: colour
+                text: colour,
+                style: `background-color:rgb(${colours[colour].red},${colours[colour].green},${colours[colour].blue})`
             });
         }
 
@@ -53,6 +54,7 @@ class OptionsPage {
             variable: 'default_path_colour',
             description: 'Colour for path highlighting',
             options: this.colours_selection,
+            inheritStyle: true,
             defaultValue: 'y'
         });
     }
@@ -79,6 +81,7 @@ class OptionsPage {
             description: 'Default colour for route highlighting',
             options: this.colours_selection,
             defaultValue: 'g',
+            inheritStyle: true,
             info: {
                 title: 'Route Highlighting Colour',
                 description: 'This option specifies the colour that is used to highlight tiles on the route when no colour is specified alongside the tile id. The colour of individual tiles may be overriden by specifying <code>{tile_id}|{colour}</code> within the route box, where colours are denoted by one of <code>g</code>, <code>r</code>, <code>b</code>, or <code>y</code>.'
@@ -129,6 +132,7 @@ class OptionsPage {
             description: 'Colour to highlight recorded tiles',
             options: this.colours_selection,
             defaultValue: 'b',
+            inheritStyle: true,
         });
 
         const recorded_output_box = subtab.addBox({
