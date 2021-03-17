@@ -81,7 +81,7 @@ class OptionsPage {
             defaultValue: 'g',
             info: {
                 title: 'Route Highlighting Colour',
-                description: 'This option specifies the colour that is used to highlight tiles on the route when no colour is specified alongside the tile id. The colour of individual tiles may be overriden by specifying <pre>{tile_id}|{colour}</pre> within the route box, where colours are denoted by one of <pre>g</pre>, <pre>r</pre>, <pre>b</pre>, or <pre>y</pre>.'
+                description: 'This option specifies the colour that is used to highlight tiles on the route when no colour is specified alongside the tile id. The colour of individual tiles may be overriden by specifying <code>{tile_id}|{colour}</code> within the route box, where colours are denoted by one of <code>g</code>, <code>r</code>, <code>b</code>, or <code>y</code>.'
             }
         });
 
