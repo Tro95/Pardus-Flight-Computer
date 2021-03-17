@@ -94,7 +94,7 @@ class OptionsPage {
         tile_highlight_box.addTextAreaOption({
             variable: 'tiles_to_highlight',
             defaultValue: '',
-            cols: 65,
+            cols: 64,
             rows: 3
         });
 
