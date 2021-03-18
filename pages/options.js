@@ -107,7 +107,16 @@ class OptionsPage {
         });
 
         mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
-        tile_highlight_box.addSaveEventListener(() => {mapper_box.innerHtml = OptionsPage.get_mapper_box_html()});
+
+        tile_highlight_box.addEventListener('save', () => {
+            mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
+            mapper_box.refreshElement();
+        });
+
+        tile_highlight_box.addEventListener('reset', () => {
+            mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
+            mapper_box.refreshElement();
+        });
     }
 
     recordingOptions(subtab) {
@@ -198,8 +207,8 @@ class OptionsPage {
 
         clear_button.addEventListener('click', () => {
             PardusOptionsUtility.setVariableValue('recorded_tiles', []);
-            recording_box.innerHtml = OptionsPage.get_recorded_output_box_html();
-            recording_box.refreshElement();
+            recorded_output_box.innerHtml = OptionsPage.get_recorded_output_box_html();
+            recorded_output_box.refreshElement();
         });        
     }
 
