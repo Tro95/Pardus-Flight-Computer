@@ -318,7 +318,7 @@ class NavArea {
 
         const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
         const colour_recorded_tiles = PardusOptionsUtility.getVariableValue('colour_recorded_tiles', true);
-        const recorded_tile_colour = PardusOptionsUtility.getVariableValue('recorded_tile_colour', 'b');
+        const recorded_tile_colour = PardusOptionsUtility.getVariableValue('recorded_tile_colour', 'c');
 
         for (const tile of this.clickableTiles()) {
             if (this.tiles_to_highlight.has(tile.tile_id)) {

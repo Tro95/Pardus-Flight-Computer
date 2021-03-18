@@ -140,7 +140,7 @@ class OptionsPage {
             variable: 'recorded_tile_colour',
             description: 'Colour to highlight recorded tiles',
             options: this.colours_selection,
-            defaultValue: 'b',
+            defaultValue: 'c',
             inheritStyle: true,
         });
 
