@@ -239,6 +239,33 @@ class NavArea {
         return path_routing;
     }
 
+    * yieldPath(tile) {
+
+        let current_tile = this.centre_tile;
+
+        while (current_tile.x != tile.x || current_tile.y != tile.y) {
+
+            let direction_x = 0;
+            let direction_y = 0;
+
+            // Which way do we want to move?
+            if (current_tile.x > tile.x) {
+                direction_x = -1;
+            } else if (current_tile.x < tile.x) {
+                direction_x = 1;
+            }
+
+            if (current_tile.y > tile.y) {
+                direction_y = -1;
+            } else if (current_tile.y < tile.y) {
+                direction_y = 1;
+            }
+
+            yield this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
+            current_tile = this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
+        }
+    }
+
     reload() {
         this.nav_element = document.getElementById('navareatransition');
 
@@ -298,13 +325,13 @@ class NavArea {
     _addRecording() {
         for (const tile of this.clickableTiles()) {
 
-            const path = this.getPath(tile);
+            //const path = this.getPath(tile);
 
             tile.addEventListener('click', () => {
                 if (PardusOptionsUtility.getVariableValue('recording', false)) {
                     const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
 
-                    for (const flown_tile of path) {
+                    for (const flown_tile of this.yieldPath(tile)) {
                         recorded_tiles.add(flown_tile.tile_id);
                     }
 
@@ -337,10 +364,10 @@ class NavArea {
 
     _addPathFinding() {
         for (const tile of this.clickableTiles()) {
-            const path = this.getPath(tile);
+            //const path = this.getPath(tile);
 
             tile.addEventListener('mouseenter', () => {
-                for (const path_tile of path) {
+                for (const path_tile of this.yieldPath(tile)) {
                     if (path_tile.isHighlighted()) {
                         path_tile.emphasiseHighlight();
                     } else {
@@ -350,7 +377,7 @@ class NavArea {
             });
 
             tile.addEventListener('mouseleave', () => {
-                for (const path_tile of path) {
+                for (const path_tile of this.yieldPath(tile)) {
                     if (path_tile.isEmphasised()) {
                         path_tile.removeEmphasis();
                     } else {
