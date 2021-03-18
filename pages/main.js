@@ -316,6 +316,12 @@ class NavArea {
 
     _highlightTiles() {
 
+        const highlight_tiles = PardusOptionsUtility.getVariableValue('highlight_tiles', true);
+
+        if (!highlight_tiles) {
+            return;
+        }
+
         const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
         const colour_recorded_tiles = PardusOptionsUtility.getVariableValue('colour_recorded_tiles', true);
         const recorded_tile_colour = PardusOptionsUtility.getVariableValue('recorded_tile_colour', 'c');

@@ -71,7 +71,7 @@ class OptionsPage {
         });
 
         route_highlighting_general_options.addBooleanOption({
-            variable: 'show_pathing',
+            variable: 'highlight_tiles',
             description: 'Enable route highlighting',
             defaultValue: true
         });
