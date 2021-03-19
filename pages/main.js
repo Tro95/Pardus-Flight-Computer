@@ -17,7 +17,7 @@ class Tile {
         }
 
         // Get the tile id
-        if (this.element.classList.contains('navShip')) {
+        if (this.element.classList.contains('navShip') && this.element.querySelector('#thisShip')) {
             this.tile_id = userloc.toString();
         } else if (this.element.children.length > 0 && this.element.children[0].tagName === 'A') {
 
