@@ -243,6 +243,8 @@ class NavArea {
 
         let current_tile = this.centre_tile;
 
+        yield current_tile;
+
         while (current_tile.x != tile.x || current_tile.y != tile.y) {
 
             let direction_x = 0;
