@@ -17,6 +17,8 @@
 // @updateURL       https://github.com/Tro95/Pardus-Flight-Computer/raw/main/pardus_flight_computer.meta.js
 // ==/UserScript==
 
+/* global OptionsPage, MainPage */
+
 switch (document.location.pathname) {
     case '/options.php':
         new OptionsPage();
