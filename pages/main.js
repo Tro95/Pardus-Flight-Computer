@@ -9,6 +9,7 @@ class Tile {
         this.highlight_string = '';
         this.highlights = [];
         this.emphasised = false;
+        this.path_highlighted = false;
 
         const unhighlight_regex = /^\s*linear-gradient.*?, (url\(.*)$/;
 
@@ -370,6 +371,10 @@ class NavArea {
 
             tile.addEventListener('mouseenter', () => {
                 for (const path_tile of this.yieldPath(tile)) {
+                    if (path_tile.path_highlighted) {
+                        continue;
+                    }
+                    path_tile.path_highlighted = true;
                     if (path_tile.isHighlighted()) {
                         path_tile.emphasiseHighlight();
                     } else {
@@ -385,6 +390,7 @@ class NavArea {
                     } else {
                         path_tile.removeHighlight(PardusOptionsUtility.getVariableValue('default_path_colour', 'y'));
                     }
+                    path_tile.path_highlighted = false;
                 }
             });
         }
