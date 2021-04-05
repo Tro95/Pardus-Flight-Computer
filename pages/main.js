@@ -30,6 +30,9 @@ class Tile {
             } else if (child_element.getAttribute('onclick').startsWith('nav')) {
                 this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1]; 
             }
+        } else if (this.element.classList.contains('navShip')) {
+            // This only happens on retreating
+            this.tile_id = userloc.toString();
         }
     }
 
@@ -372,25 +375,32 @@ class NavArea {
     _addRecording() {
         const previous_tile_id = PardusOptionsUtility.getVariableValue('last_tile_id', -1);
 
-        if (previous_tile_id !== -1 && previous_tile_id !== this.centre_tile.tile_id) {
+        console.log(previous_tile_id);
+
+        if (previous_tile_id !== -1 && previous_tile_id !== userloc.toString()) {
             if (PardusOptionsUtility.getVariableValue('recording', false)) {
                 const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
                 const bad_recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
 
                 for (const flown_tile of this.yieldPathFrom(previous_tile_id)) {
                     recorded_tiles.add(flown_tile.tile_id);
-                    bad_recorded_tiles.delete(this.centre_tile.tile_id);
+                    bad_recorded_tiles.delete(userloc.toString());
                 }
 
-                recorded_tiles.add(this.centre_tile.tile_id);
-                bad_recorded_tiles.delete(this.centre_tile.tile_id);
+                recorded_tiles.add(userloc.toString());
+                bad_recorded_tiles.delete(userloc.toString());
 
                 PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
                 PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(bad_recorded_tiles));
             }
         }
 
-        PardusOptionsUtility.setVariableValue('last_tile_id', this.centre_tile.tile_id);
+        if (userloc.toString()) {
+            PardusOptionsUtility.setVariableValue('last_tile_id', userloc.toString()); 
+        } else {
+            console.log("Tile id not defined!");
+        }
+        
     }
 
     _highlightTiles() {
