@@ -144,6 +144,18 @@ class OptionsPage {
             inheritStyle: true,
         });
 
+        const bad_recorded_tiles_colour_option = recording_general_options.addSelectOption({
+            variable: 'bad_recorded_tile_colour',
+            description: 'Colour to highlight bad tiles',
+            options: this.colours_selection,
+            defaultValue: 'r',
+            inheritStyle: true,
+            info: {
+                title: 'Bad Tile Recording and Highlighting',
+                description: 'This option enables recording of tiles when you encounter an NPC, colouring them differently to normal recorded tiles, and saving them separately.'
+            }
+        });
+
         const recorded_output_box = subtab.addBox({
             heading: 'Recorded Tiles',
             description: 'The tiles that have been recorded.'
@@ -151,6 +163,11 @@ class OptionsPage {
 
         recorded_output_box.innerHtml = OptionsPage.get_recorded_output_box_html();
         recorded_output_box.addAfterRefreshHook(() => {this.recordedOutputAfterRefresh(recorded_output_box)});
+
+        recording_general_options.addEventListener('save', () => {
+            recorded_output_box.innerHtml = OptionsPage.get_recorded_output_box_html();
+            recorded_output_box.refreshElement();
+        });
 
         const recording_toggle_box = subtab.addBox({
             heading: 'Record',
@@ -182,7 +199,7 @@ class OptionsPage {
     }
 
     static get_recorded_output_box_html() {
-        let recording_output = PardusOptionsUtility.getVariableValue('recorded_tiles', []).join(',');
+        let recording_output = PardusOptionsUtility.getVariableValue('recorded_tiles', []).concat(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []).map(x => x + '|' + PardusOptionsUtility.getVariableValue('bad_recorded_tile_colour', 'r'))).join(','); 
 
         if (recording_output === '') {
             recording_output = 'No tiles recorded';
@@ -207,6 +224,7 @@ class OptionsPage {
 
         clear_button.addEventListener('click', () => {
             PardusOptionsUtility.setVariableValue('recorded_tiles', []);
+            PardusOptionsUtility.setVariableValue('bad_recorded_tiles', []);
             recorded_output_box.innerHtml = OptionsPage.get_recorded_output_box_html();
             recorded_output_box.refreshElement();
         });        

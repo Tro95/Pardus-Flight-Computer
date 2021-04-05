@@ -210,7 +210,7 @@ class NavArea {
         this.reload();
     }
 
-    getPath(tile) {
+    getPathTo(tile) {
 
         const path_routing = [this.centre_tile];
 
@@ -240,7 +240,7 @@ class NavArea {
         return path_routing;
     }
 
-    * yieldPath(tile) {
+    * yieldPathTo(tile) {
 
         let current_tile = this.centre_tile;
 
@@ -269,6 +269,40 @@ class NavArea {
         }
     }
 
+    * yieldPathFrom(tile_id) {
+
+        const target = this.centre_tile;
+        let current_tile = this.getTile(tile_id);
+
+        if (!current_tile) {
+            return target;
+        }
+
+        yield current_tile;
+
+        while (current_tile.x != target.x || current_tile.y != target.y) {
+
+            let direction_x = 0;
+            let direction_y = 0;
+
+            // Which way do we want to move?
+            if (current_tile.x > target.x) {
+                direction_x = -1;
+            } else if (current_tile.x < target.x) {
+                direction_x = 1;
+            }
+
+            if (current_tile.y > target.y) {
+                direction_y = -1;
+            } else if (current_tile.y < target.y) {
+                direction_y = 1;
+            }
+
+            yield this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
+            current_tile = this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
+        }
+    }
+
     reload() {
         this.nav_element = document.getElementById('navareatransition');
 
@@ -280,6 +314,7 @@ class NavArea {
         this.width = this.nav_element.rows[0].childElementCount;
 
         this.grid = [];
+        this.tiles_map = new Map();
 
         for (const row of this.nav_element.rows) {
             const row_arr = [];
@@ -292,6 +327,7 @@ class NavArea {
                 const tile = new Tile(tile_td, tile_x, tile_y);
 
                 row_arr.push(tile);
+                this.tiles_map.set(tile.tile_id, tile);
             }
 
             this.grid.push(row_arr);
@@ -307,6 +343,14 @@ class NavArea {
         if (PardusOptionsUtility.getVariableValue('show_pathing', true)) {
             this._addPathFinding();
         }
+    }
+
+    getTile(tile_id) {
+        if (this.tiles_map.has(tile_id)) {
+            return this.tiles_map.get(tile_id);
+        }
+
+        return null;
     }
 
     * tiles() {
@@ -326,22 +370,27 @@ class NavArea {
     }
 
     _addRecording() {
-        for (const tile of this.clickableTiles()) {
+        const previous_tile_id = PardusOptionsUtility.getVariableValue('last_tile_id', -1);
 
-            //const path = this.getPath(tile);
+        if (previous_tile_id !== -1 && previous_tile_id !== this.centre_tile.tile_id) {
+            if (PardusOptionsUtility.getVariableValue('recording', false)) {
+                const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
+                const bad_recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
 
-            tile.addEventListener('click', () => {
-                if (PardusOptionsUtility.getVariableValue('recording', false)) {
-                    const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
-
-                    for (const flown_tile of this.yieldPath(tile)) {
-                        recorded_tiles.add(flown_tile.tile_id);
-                    }
-
-                    PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
+                for (const flown_tile of this.yieldPathFrom(previous_tile_id)) {
+                    recorded_tiles.add(flown_tile.tile_id);
+                    bad_recorded_tiles.delete(this.centre_tile.tile_id);
                 }
-            });
+
+                recorded_tiles.add(this.centre_tile.tile_id);
+                bad_recorded_tiles.delete(this.centre_tile.tile_id);
+
+                PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
+                PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(bad_recorded_tiles));
+            }
         }
+
+        PardusOptionsUtility.setVariableValue('last_tile_id', this.centre_tile.tile_id);
     }
 
     _highlightTiles() {
@@ -353,11 +402,15 @@ class NavArea {
         }
 
         const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
+        const bad_recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
         const colour_recorded_tiles = PardusOptionsUtility.getVariableValue('colour_recorded_tiles', true);
         const recorded_tile_colour = PardusOptionsUtility.getVariableValue('recorded_tile_colour', 'c');
+        const bad_recorded_tile_colour = PardusOptionsUtility.getVariableValue('bad_recorded_tile_colour', 'r');
 
         for (const tile of this.clickableTiles()) {
-            if (this.tiles_to_highlight.has(tile.tile_id)) {
+            if (colour_recorded_tiles && bad_recorded_tiles.has(tile.tile_id)) {
+                tile.highlight(bad_recorded_tile_colour);
+            } else if (this.tiles_to_highlight.has(tile.tile_id)) {
                 tile.highlight(this.tiles_to_highlight.get(tile.tile_id));
             } else if (colour_recorded_tiles && recorded_tiles.has(tile.tile_id)) {
                 tile.highlight(recorded_tile_colour);
@@ -367,10 +420,9 @@ class NavArea {
 
     _addPathFinding() {
         for (const tile of this.clickableTiles()) {
-            //const path = this.getPath(tile);
 
             tile.addEventListener('mouseenter', () => {
-                for (const path_tile of this.yieldPath(tile)) {
+                for (const path_tile of this.yieldPathTo(tile)) {
                     if (path_tile.path_highlighted) {
                         continue;
                     }
@@ -384,7 +436,7 @@ class NavArea {
             });
 
             tile.addEventListener('mouseleave', () => {
-                for (const path_tile of this.yieldPath(tile)) {
+                for (const path_tile of this.yieldPathTo(tile)) {
                     if (path_tile.isEmphasised()) {
                         path_tile.removeEmphasis();
                     } else {

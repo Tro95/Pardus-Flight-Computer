@@ -14,10 +14,58 @@ function get_sector_coords_obj(tile_id) {
             return {
                 'sector': index,
                 'x': Math.floor((tile_id - sector.start) / sector.rows),
-                'y': (tile_id - sector.start) % sector.rows
+                'y': (tile_id - sector.start) % sector.rows,
+                'tile_id': tile_id
             }
         }
     }
+}
+
+function path_from_tile_to_tile(from_tile_id, to_tile_id) {
+    const from_tile = get_sector_coords_obj(from_tile_id);
+    const to_tile = get_sector_coords_obj(to_tile_id);
+
+    if (from_tile.sector != to_tile.sector) {
+        throw `Tiles are not in the same sector (${from_tile.sector}, ${to_tile.sector})`;
+    };
+
+    const sector = from_tile.sector;
+    const sector_width = sectorMapDataObj[sector].cols;
+    const sector_height = sectorMapDataObj[sector].rows;
+
+    const return_path = [];
+
+    let current_tile = from_tile;
+
+    while (current_tile.x != to_tile.x || current_tile.y != to_tile.y) {
+
+        return_path.push(current_tile.tile_id);
+
+        let direction_x = 0;
+        let direction_y = 0;
+
+        // Which way do we want to move?
+        if (current_tile.x > to_tile.x) {
+            direction_x = -1;
+        } else if (current_tile.x < to_tile.x) {
+            direction_x = 1;
+        }
+
+        if (current_tile.y > to_tile.y) {
+            direction_y = -1;
+        } else if (current_tile.y < to_tile.y) {
+            direction_y = 1;
+        }
+
+        current_tile = {
+            'sector': sector,
+            'x': current_tile.x + direction_x,
+            'y': current_tile.y + direction_y,
+            'tile_id': getTileIdFromSectorAndCoords(sector, current_tile.x + direction_x, current_tile.y + direction_y)
+        }
+    }
+
+    return return_path;
 }
 
 /* return the tile id given the current sector name and coordinates */
@@ -41,7 +89,7 @@ function getTileIdFromSectorAndCoords(sector, x, y) {
 
     let sectorData = sectorMapDataObj[sector];
     
-    if (x < 0 || y < 0 || x >= sectorData.cols || y >= sectorData.rows) {
+    if (Number(x) < 0 || Number(y) < 0 || Number(x) >= sectorData.cols || Number(y) >= sectorData.rows) {
         return -1;
     }
 

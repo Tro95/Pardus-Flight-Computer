@@ -9,8 +9,34 @@ class Ship2opponent_combatPage {
 
         console.log(match);
 
-        matched_tile_id = getTileIdFromSectorAndCoords(match[0], match[1], match[2]);
+        const matched_tile_id = getTileIdFromSectorAndCoords(match[1], match[2], match[3]);
 
-        console.log(matched_tile_id);
+        this.tile_id = matched_tile_id;
+        this._addRecording();
+    }
+
+    _addRecording() {
+        const previous_tile_id = PardusOptionsUtility.getVariableValue('last_tile_id', -1);
+
+        if (previous_tile_id !== -1 && previous_tile_id !== this.tile_id) {
+            if (PardusOptionsUtility.getVariableValue('recording', false)) {
+                const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
+                const bad_recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
+
+                for (const flown_tile of path_from_tile_to_tile(previous_tile_id, this.tile_id)) {
+                    recorded_tiles.add(flown_tile.toString());
+                }
+
+                bad_recorded_tiles.add(this.tile_id.toString());
+
+                console.log(bad_recorded_tiles);
+                console.log(this.tile_id);
+
+                PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(bad_recorded_tiles));
+                PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
+            }
+        }
+
+        PardusOptionsUtility.setVariableValue('last_tile_id', this.tile_id);
     }
 }
