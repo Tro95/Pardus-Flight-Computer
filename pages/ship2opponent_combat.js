@@ -2,13 +2,9 @@ class Ship2opponent_combatPage {
     constructor() {
 
         const location = document.querySelector('b').innerText;
-
         const extract_regex = /([\w\-\d\s]*)\s\[(\d{1,3}),(\d{1,3})\]/;
 
         const match = location.match(extract_regex);
-
-        console.log(match);
-
         const matched_tile_id = getTileIdFromSectorAndCoords(match[1], match[2], match[3]);
 
         this.tile_id = matched_tile_id;
@@ -28,9 +24,6 @@ class Ship2opponent_combatPage {
                 }
 
                 bad_recorded_tiles.add(this.tile_id.toString());
-
-                console.log(bad_recorded_tiles);
-                console.log(this.tile_id);
 
                 PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(bad_recorded_tiles));
                 PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));

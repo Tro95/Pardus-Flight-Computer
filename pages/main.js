@@ -375,8 +375,6 @@ class NavArea {
     _addRecording() {
         const previous_tile_id = PardusOptionsUtility.getVariableValue('last_tile_id', -1);
 
-        console.log(previous_tile_id);
-
         if (previous_tile_id !== -1 && previous_tile_id !== userloc.toString()) {
             if (PardusOptionsUtility.getVariableValue('recording', false)) {
                 const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
@@ -397,10 +395,7 @@ class NavArea {
 
         if (userloc.toString()) {
             PardusOptionsUtility.setVariableValue('last_tile_id', userloc.toString()); 
-        } else {
-            console.log("Tile id not defined!");
         }
-        
     }
 
     _highlightTiles() {
