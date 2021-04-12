@@ -52,6 +52,10 @@ class Tile {
         return false;
     }
 
+    isCentreTile() {
+        return this.is_centre_tile;
+    }
+
     isHighlighted() {
         if (this.highlights.length > 0) {
             return true;
@@ -213,97 +217,48 @@ class NavArea {
         this.reload();
     }
 
-    getPathTo(tile) {
+    * yieldPathBetween(from, to) {
+        let current_tile = from;
 
-        const path_routing = [this.centre_tile];
+        yield current_tile;
 
-        for (let step = 0; step < Math.max(Math.abs(this.centre_tile.x - tile.x), Math.abs(this.centre_tile.y - tile.y)); step++) {
-
-            const current_tile = path_routing[step];
+        while (current_tile.x != to.x || current_tile.y != to.y) {
 
             let direction_x = 0;
             let direction_y = 0;
 
             // Which way do we want to move?
-            if (current_tile.x > tile.x) {
+            if (current_tile.x > to.x) {
                 direction_x = -1;
-            } else if (current_tile.x < tile.x) {
+            } else if (current_tile.x < to.x) {
                 direction_x = 1;
             }
 
-            if (current_tile.y > tile.y) {
+            if (current_tile.y > to.y) {
                 direction_y = -1;
-            } else if (current_tile.y < tile.y) {
+            } else if (current_tile.y < to.y) {
                 direction_y = 1;
             }
 
-            path_routing.push(this.grid[current_tile.y + direction_y][current_tile.x + direction_x]);
+            yield this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
+            current_tile = this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
         }
+    }
 
-        return path_routing;
+    getPathBetween(from, to) {
+        return Array.from(this.yieldPathBetween(from, to));
+    }
+
+    getPathTo(tile) {
+        return this.getPathBetween(this.centre_tile, tile);
     }
 
     * yieldPathTo(tile) {
-
-        let current_tile = this.centre_tile;
-
-        yield current_tile;
-
-        while (current_tile.x != tile.x || current_tile.y != tile.y) {
-
-            let direction_x = 0;
-            let direction_y = 0;
-
-            // Which way do we want to move?
-            if (current_tile.x > tile.x) {
-                direction_x = -1;
-            } else if (current_tile.x < tile.x) {
-                direction_x = 1;
-            }
-
-            if (current_tile.y > tile.y) {
-                direction_y = -1;
-            } else if (current_tile.y < tile.y) {
-                direction_y = 1;
-            }
-
-            yield this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
-            current_tile = this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
-        }
+        yield* this.yieldPathBetween(this.centre_tile, tile);
     }
 
     * yieldPathFrom(tile_id) {
-
-        const target = this.centre_tile;
-        let current_tile = this.getTile(tile_id);
-
-        if (!current_tile) {
-            return target;
-        }
-
-        yield current_tile;
-
-        while (current_tile.x != target.x || current_tile.y != target.y) {
-
-            let direction_x = 0;
-            let direction_y = 0;
-
-            // Which way do we want to move?
-            if (current_tile.x > target.x) {
-                direction_x = -1;
-            } else if (current_tile.x < target.x) {
-                direction_x = 1;
-            }
-
-            if (current_tile.y > target.y) {
-                direction_y = -1;
-            } else if (current_tile.y < target.y) {
-                direction_y = 1;
-            }
-
-            yield this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
-            current_tile = this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
-        }
+        yield* this.yieldPathBetween(this.getTile(tile_id), this.centre_tile);
     }
 
     reload() {
@@ -340,6 +295,7 @@ class NavArea {
         const centre_y = Math.floor(this.height / 2);
 
         this.centre_tile = this.grid[centre_y][centre_x];
+        this.centre_tile.is_centre_tile = true;
         this._highlightTiles();
         this._addRecording();
 
