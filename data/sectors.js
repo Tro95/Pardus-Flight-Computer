@@ -15,7 +15,9 @@ function get_sector_coords_obj(tile_id) {
                 'sector': index,
                 'x': Math.floor((tile_id - sector.start) / sector.rows),
                 'y': (tile_id - sector.start) % sector.rows,
-                'tile_id': tile_id
+                'tile_id': tile_id,
+                'rows': sector.rows,
+                'cols': sector.cols
             }
         }
     }

@@ -225,6 +225,7 @@ class OptionsPage {
         clear_button.addEventListener('click', () => {
             PardusOptionsUtility.setVariableValue('recorded_tiles', []);
             PardusOptionsUtility.setVariableValue('bad_recorded_tiles', []);
+            PardusOptionsUtility.setVariableValue('expected_route', []);
             recorded_output_box.innerHtml = OptionsPage.get_recorded_output_box_html();
             recorded_output_box.refreshElement();
         });        

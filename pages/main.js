@@ -1,43 +1,56 @@
 /* global PardusOptionsUtility, colours, userloc */
 
 class Tile {
-    constructor(element, x, y) {
-        this.element = element;
+    constructor(element, x, y, tile_id = null, virtual_tile = false) {
         this.x = x;
         this.y = y;
-        this.background_image = this.element.style.backgroundImage;
         this.highlight_string = '';
         this.highlights = [];
         this.emphasised = false;
         this.path_highlighted = false;
+        this.virtual_tile = virtual_tile;
 
-        const unhighlight_regex = /^\s*linear-gradient.*?, (url\(.*)$/;
+        if (this.isVirtualTile()) {
+            this.tile_id = tile_id.toString();
+        } else {
+            this.element = element;
+            this.background_image = this.element.style.backgroundImage;
+            const unhighlight_regex = /^\s*linear-gradient.*?, (url\(.*)$/;
 
-        if (unhighlight_regex.test(this.background_image)) {
-            this.background_image = this.background_image.match(unhighlight_regex)[1]
-        }
-
-        // Get the tile id
-        if (this.element.classList.contains('navShip') && this.element.querySelector('#thisShip')) {
-            this.tile_id = userloc.toString();
-        } else if (this.element.children.length > 0 && this.element.children[0].tagName === 'A') {
-
-            const child_element = this.element.children[0];
-
-            // Can we navigate to the tile?
-            if (child_element.getAttribute('onclick') === null || child_element.getAttribute('onclick').startsWith('warp')) {
-                this.tile_id = userloc.toString();
-            } else if (child_element.getAttribute('onclick').startsWith('nav')) {
-                this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1]; 
+            if (unhighlight_regex.test(this.background_image)) {
+                this.background_image = this.background_image.match(unhighlight_regex)[1];
             }
-        } else if (this.element.classList.contains('navShip')) {
-            // This only happens on retreating
-            this.tile_id = userloc.toString();
+
+            // Get the tile id
+            if (this.element.classList.contains('navShip') && this.element.querySelector('#thisShip')) {
+                this.tile_id = userloc.toString();
+            } else if (this.element.children.length > 0 && this.element.children[0].tagName === 'A') {
+
+                const child_element = this.element.children[0];
+
+                // Can we navigate to the tile?
+                if (child_element.getAttribute('onclick') === null || child_element.getAttribute('onclick').startsWith('warp')) {
+                    this.tile_id = userloc.toString();
+                } else if (child_element.getAttribute('onclick').startsWith('nav')) {
+                    this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1]; 
+                }
+            } else if (this.element.classList.contains('navShip')) {
+                // This only happens on retreating
+                this.tile_id = userloc.toString();
+            }
         }
     }
 
+    toString() {
+        return `Tile ${this.tile_id} [${this.x}, ${this.y}]`;
+    }
+
+    isVirtualTile() {
+        return this.virtual_tile;
+    }
+
     isClickable() {
-        if (this.tile_id && parseInt(this.tile_id) > 0) {
+        if (!this.isVirtualTile() && this.tile_id && parseInt(this.tile_id) > 0) {
             return true;
         }
 
@@ -45,7 +58,7 @@ class Tile {
     }
 
     isNavigatable() {
-        if (this.isClickable() && this.element.children[0].getAttribute('onclick') && this.element.children[0].getAttribute('onclick').startsWith('nav')) {
+        if (!this.isVirtualTile() && this.element && this.element.children.length > 0 && this.element.children[0].getAttribute('onclick') && this.element.children[0].getAttribute('onclick').startsWith('nav') && this.isClickable()) {
             return true;
         }
 
@@ -65,6 +78,11 @@ class Tile {
     }
 
     addRecordHandler() {
+
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
         const tile_id_to_add = this.tile_id;
 
         this.addEventListener('click', () => {
@@ -77,12 +95,19 @@ class Tile {
     }
 
     addEventListener(event, func) {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
         if (this.isNavigatable()) {
             this.element.children[0].addEventListener(event, func);
         }
     }
 
     highlight(highlight_colour = 'g') {
+        if (this.isVirtualTile()) {
+            return false;
+        }
 
         for (const colour in colours) {
             if (colours[colour].short_code === highlight_colour) {
@@ -113,6 +138,10 @@ class Tile {
     }
 
     removeHighlight(highlight_colour = 'g') {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
         const colour_to_remove = {
             red: 0,
             green: 0,
@@ -138,6 +167,10 @@ class Tile {
     }
 
     _refreshHighlightStatus() {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
 
         if (this.highlights.length === 0) {
             return this._clearAllHighlighting();
@@ -156,6 +189,10 @@ class Tile {
     }
 
     _clearAllHighlighting() {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
         if (this.background_image) {
             this.element.style.backgroundImage = this.background_image;
         } else {
@@ -167,6 +204,9 @@ class Tile {
     }
 
     _getHighlightedColourString() {
+        if (this.isVirtualTile()) {
+            return false;
+        }
 
         // This is probably the world's worst colour-mixing algorithm
         let total_red = 0;
@@ -217,9 +257,17 @@ class NavArea {
         this.reload();
     }
 
-    * yieldPathBetween(from, to) {
-        let current_tile = from;
+    getTileOrVirtual(x, y, reference) {
+        if (x >= this.grid[0].length || x < 0 || y < 0 || y >= this.grid.length) {
+            const sector_obj = get_sector_coords_obj(reference.tile_id);
+            return new Tile(null, x, y, Number(reference.tile_id) + (x - reference.x) + ((y - reference.y) * sector_obj.cols), true);
+        }
 
+        return this.grid[y][x];
+    }
+
+    * yieldPathBetween(from, to, ignore_navigatable = false) {
+        let current_tile = from;
         yield current_tile;
 
         while (current_tile.x != to.x || current_tile.y != to.y) {
@@ -240,9 +288,65 @@ class NavArea {
                 direction_y = 1;
             }
 
-            yield this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
-            current_tile = this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
+            if (direction_x == 0 && direction_y == 0) {
+                break;
+            }
+
+            let candidate_tile = this.grid[current_tile.y + direction_y][current_tile.x + direction_x];
+
+            // Check to see if it's an unpassable tile, in which case the auto-pilot kicks in
+            if (!candidate_tile.isNavigatable()) {
+
+                if (candidate_tile.isVirtualTile()) {
+                    break;
+                }
+
+                // If we're still going diagonally, the auto-pilot cannot do anything smart, so try to go in just one direction
+                if (direction_x != 0 && direction_y != 0) {
+
+                    candidate_tile = this.getTileOrVirtual(current_tile.x, current_tile.y + direction_y, current_tile);
+
+                    if (!candidate_tile.isNavigatable()) {
+
+                        candidate_tile = this.getTileOrVirtual(current_tile.x + direction_x, current_tile.y, current_tile);
+
+                        if (!candidate_tile.isNavigatable()) {
+                            break;
+                        }
+                    }
+                } else if (direction_x == 0) {
+                    // Vertical auto-pilot will attempt to navigate right, then left
+                    
+                    candidate_tile = this.getTileOrVirtual(current_tile.x + 1, current_tile.y + direction_y, current_tile);
+
+                    if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
+
+                        candidate_tile = this.getTileOrVirtual(current_tile.x - 1, current_tile.y + direction_y, current_tile);
+
+                        if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
+                            break;
+                        }
+                    }
+                } else if (direction_y == 0) {
+                    // Horizontal auto-pilot will attempt to navigate down, then up
+
+                    candidate_tile = this.getTileOrVirtual(current_tile.x + direction_x, current_tile.y + 1, current_tile);
+
+                    if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
+
+                        candidate_tile = this.getTileOrVirtual(current_tile.x + direction_x, current_tile.y - 1, current_tile);
+
+                        if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            current_tile = candidate_tile;
+            yield current_tile;
         }
+
     }
 
     getPathBetween(from, to) {
@@ -253,12 +357,19 @@ class NavArea {
         return this.getPathBetween(this.centre_tile, tile);
     }
 
+    getPathFrom(tile) {
+        return this.getPathBetween(tile, this.centre_tile);
+    }
+
     * yieldPathTo(tile) {
         yield* this.yieldPathBetween(this.centre_tile, tile);
     }
 
-    * yieldPathFrom(tile_id) {
-        yield* this.yieldPathBetween(this.getTile(tile_id), this.centre_tile);
+    * yieldPathFrom(tile_id, ignore_navigatable = false) {
+
+        const from_tile = this.getTile(tile_id);
+
+        yield* this.yieldPathBetween(from_tile, this.centre_tile, ignore_navigatable);
     }
 
     reload() {
@@ -328,29 +439,52 @@ class NavArea {
         }
     }
 
-    _addRecording() {
-        const previous_tile_id = PardusOptionsUtility.getVariableValue('last_tile_id', -1);
-
-        if (previous_tile_id !== -1 && previous_tile_id !== userloc.toString()) {
-            if (PardusOptionsUtility.getVariableValue('recording', false)) {
-                const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
-                const bad_recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
-
-                for (const flown_tile of this.yieldPathFrom(previous_tile_id)) {
-                    recorded_tiles.add(flown_tile.tile_id);
-                    bad_recorded_tiles.delete(userloc.toString());
-                }
-
-                recorded_tiles.add(userloc.toString());
-                bad_recorded_tiles.delete(userloc.toString());
-
-                PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
-                PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(bad_recorded_tiles));
+    * navigatableTiles() {
+        for (const tile of this.tiles()) {
+            if (tile.isNavigatable()) {
+                yield tile;
             }
         }
+    }
 
-        if (userloc.toString()) {
-            PardusOptionsUtility.setVariableValue('last_tile_id', userloc.toString()); 
+    _addRecording() {
+        const previous_tile_id = PardusOptionsUtility.getVariableValue('last_tile_id', -1);
+        const current_position = userloc.toString();
+        const expected_route = PardusOptionsUtility.getVariableValue('expected_route', []);
+
+        if (PardusOptionsUtility.getVariableValue('recording', false)) {
+
+            const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
+            const bad_recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
+
+            if (expected_route.includes(current_position)) {
+                for (const flown_tile of expected_route) {
+                    recorded_tiles.add(flown_tile);
+                    bad_recorded_tiles.delete(flown_tile);
+
+                    if (flown_tile === current_position) {
+                        break;
+                    }
+                }
+            }
+
+            PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
+            PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(bad_recorded_tiles));
+
+            for (const tile of this.navigatableTiles()) {
+                const path = this.getPathTo(tile);
+                const path_tile_ids = path.map(x => x.tile_id);
+
+                tile.addEventListener('click', () => {
+                    PardusOptionsUtility.setVariableValue('expected_route', path_tile_ids);
+                });
+            }
+        } else {
+            PardusOptionsUtility.setVariableValue('expected_route', []);
+        }
+
+        if (current_position) {
+            PardusOptionsUtility.setVariableValue('last_tile_id', current_position); 
         }
     }
 
@@ -380,10 +514,12 @@ class NavArea {
     }
 
     _addPathFinding() {
-        for (const tile of this.clickableTiles()) {
+        for (const tile of this.navigatableTiles()) {
+
+            const path = this.getPathTo(tile);
 
             tile.addEventListener('mouseenter', () => {
-                for (const path_tile of this.yieldPathTo(tile)) {
+                for (const path_tile of path) {
                     if (path_tile.path_highlighted) {
                         continue;
                     }
@@ -397,7 +533,7 @@ class NavArea {
             });
 
             tile.addEventListener('mouseleave', () => {
-                for (const path_tile of this.yieldPathTo(tile)) {
+                for (const path_tile of path) {
                     if (path_tile.isEmphasised()) {
                         path_tile.removeEmphasis();
                     } else {
