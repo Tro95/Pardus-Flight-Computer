@@ -1,4 +1,4 @@
-/* global PardusOptionsUtility, userloc */
+/* global PardusOptionsUtility, userloc, getTileIdFromSectorAndCoords */
 
 class Ship2opponent_combatPage {
     constructor() {
