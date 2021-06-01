@@ -385,6 +385,8 @@ class NavArea {
         this.grid = [];
         this.tiles_map = new Map();
 
+        let hovered_tile = null;
+
         for (const row of this.nav_element.rows) {
             const row_arr = [];
 
@@ -397,6 +399,10 @@ class NavArea {
 
                 row_arr.push(tile);
                 this.tiles_map.set(tile.tile_id, tile);
+
+                if (!tile.isVirtualTile() && tile.element.querySelector(':hover')) {
+                    hovered_tile = tile;
+                }
             }
 
             this.grid.push(row_arr);
@@ -407,6 +413,23 @@ class NavArea {
 
         this.centre_tile = this.grid[centre_y][centre_x];
         this.centre_tile.is_centre_tile = true;
+
+        if (hovered_tile) {
+            const path = this.getPathTo(tile);
+
+            for (const path_tile of path) {
+                if (path_tile.path_highlighted) {
+                    continue;
+                }
+                path_tile.path_highlighted = true;
+                if (path_tile.isHighlighted()) {
+                    path_tile.emphasiseHighlight();
+                } else {
+                    path_tile.highlight(PardusOptionsUtility.getVariableValue('default_path_colour', 'y'));
+                }
+            }
+        }
+
         this._highlightTiles();
         this._addRecording();
 
@@ -514,6 +537,7 @@ class NavArea {
     }
 
     _addPathFinding() {
+
         for (const tile of this.navigatableTiles()) {
 
             const path = this.getPathTo(tile);
