@@ -1,4 +1,4 @@
-/* global PardusOptionsUtility, colours, userloc */
+/* global PardusOptionsUtility, colours, userloc, get_sector_coords_obj */
 
 class Tile {
     constructor(element, x, y, tile_id = null, virtual_tile = false) {
@@ -399,10 +399,6 @@ class NavArea {
 
                 row_arr.push(tile);
                 this.tiles_map.set(tile.tile_id, tile);
-
-                if (!tile.isVirtualTile() && tile.element.querySelector(':hover')) {
-                    hovered_tile = tile;
-                }
             }
 
             this.grid.push(row_arr);
@@ -413,22 +409,6 @@ class NavArea {
 
         this.centre_tile = this.grid[centre_y][centre_x];
         this.centre_tile.is_centre_tile = true;
-
-        if (hovered_tile) {
-            const path = this.getPathTo(tile);
-
-            for (const path_tile of path) {
-                if (path_tile.path_highlighted) {
-                    continue;
-                }
-                path_tile.path_highlighted = true;
-                if (path_tile.isHighlighted()) {
-                    path_tile.emphasiseHighlight();
-                } else {
-                    path_tile.highlight(PardusOptionsUtility.getVariableValue('default_path_colour', 'y'));
-                }
-            }
-        }
 
         this._highlightTiles();
         this._addRecording();
@@ -566,6 +546,20 @@ class NavArea {
                     path_tile.path_highlighted = false;
                 }
             });
+
+            if (tile.element.querySelector(':hover')) {
+                for (const path_tile of path) {
+                    if (path_tile.path_highlighted) {
+                        continue;
+                    }
+                    path_tile.path_highlighted = true;
+                    if (path_tile.isHighlighted()) {
+                        path_tile.emphasiseHighlight();
+                    } else {
+                        path_tile.highlight(PardusOptionsUtility.getVariableValue('default_path_colour', 'y'));
+                    }
+                }
+            }
         }
     }
 }
