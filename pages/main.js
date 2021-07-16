@@ -586,7 +586,9 @@ class MainPage {
     }
 
     handle_partial_refresh(func) {
-        const nav_element = document.getElementById('tdSpaceChart').getElementsByTagName('table')[0];
+        //const nav_element = document.getElementById('tdSpaceChart').getElementsByTagName('table')[0];
+
+        const nav_element = document.getElementById('nav').parentNode;
 
         // Options for the observer (which mutations to observe)
         const config = { attributes: false, childList: true, subtree: true };
