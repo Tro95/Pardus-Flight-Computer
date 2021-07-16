@@ -3,7 +3,7 @@
 // @version         0.7.0
 // @description     Flight Computer to assist pathfinding in Pardus
 // @author          Tro (Artemis)
-// @include         http*://*.pardus.at/main.php
+// @include         http*://*.pardus.at/main.php*
 // @include         http*://*.pardus.at/ship2opponent_combat.php*
 // @include         http*://*.pardus.at/options.php
 // @grant           GM_setValue
