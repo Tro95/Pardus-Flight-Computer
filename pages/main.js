@@ -95,10 +95,6 @@ class Tile {
     }
 
     addEventListener(event, func) {
-        if (this.isVirtualTile()) {
-            return false;
-        }
-
         if (this.isNavigatable()) {
             this.element.children[0].addEventListener(event, func);
         }
