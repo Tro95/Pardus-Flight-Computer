@@ -485,10 +485,7 @@ class NavArea {
                 const path_tile_ids = path.map(x => x.tile_id);
 
                 tile.addEventListener('click', () => {
-                    console.log('Setting expected route');
                     PardusOptionsUtility.setVariableValue('expected_route', path_tile_ids);
-                    console.log(`Expected route: ${path_tile_ids}`);
-                    console.log('Set expected route');
                 });
             }
         } else {
@@ -514,7 +511,6 @@ class NavArea {
         const recorded_tile_colour = PardusOptionsUtility.getVariableValue('recorded_tile_colour', 'c');
         const bad_recorded_tile_colour = PardusOptionsUtility.getVariableValue('bad_recorded_tile_colour', 'r');
 
-        console.log('Starting highlighting');
         for (const tile of this.clickableTiles()) {
             if (colour_recorded_tiles && bad_recorded_tiles.has(tile.tile_id)) {
                 tile.highlight(bad_recorded_tile_colour);
@@ -524,7 +520,6 @@ class NavArea {
                 tile.highlight(recorded_tile_colour);
             }
         }
-        console.log('Finished highlighting');
     }
 
     _addPathFinding() {
