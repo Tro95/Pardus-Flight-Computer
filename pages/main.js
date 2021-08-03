@@ -45,6 +45,10 @@ class Tile {
         return `Tile ${this.tile_id} [${this.x}, ${this.y}]`;
     }
 
+    valueOf() {
+        return Number(this.tile_id);
+    }
+
     isVirtualTile() {
         return this.virtual_tile;
     }
@@ -451,6 +455,8 @@ class NavArea {
         const current_position = userloc.toString();
         const expected_route = PardusOptionsUtility.getVariableValue('expected_route', []);
 
+        const recording_mode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
+
         if (PardusOptionsUtility.getVariableValue('recording', false)) {
 
             const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
@@ -458,7 +464,11 @@ class NavArea {
 
             if (expected_route.includes(current_position)) {
                 for (const flown_tile of expected_route) {
-                    recorded_tiles.add(flown_tile);
+
+                    if (recording_mode === 'all' || recording_mode === 'good') {
+                        recorded_tiles.add(flown_tile);
+                    }
+
                     bad_recorded_tiles.delete(flown_tile);
 
                     if (flown_tile === current_position) {
@@ -475,7 +485,10 @@ class NavArea {
                 const path_tile_ids = path.map(x => x.tile_id);
 
                 tile.addEventListener('click', () => {
+                    console.log('Setting expected route');
                     PardusOptionsUtility.setVariableValue('expected_route', path_tile_ids);
+                    console.log(`Expected route: ${path_tile_ids}`);
+                    console.log('Set expected route');
                 });
             }
         } else {
@@ -501,6 +514,7 @@ class NavArea {
         const recorded_tile_colour = PardusOptionsUtility.getVariableValue('recorded_tile_colour', 'c');
         const bad_recorded_tile_colour = PardusOptionsUtility.getVariableValue('bad_recorded_tile_colour', 'r');
 
+        console.log('Starting highlighting');
         for (const tile of this.clickableTiles()) {
             if (colour_recorded_tiles && bad_recorded_tiles.has(tile.tile_id)) {
                 tile.highlight(bad_recorded_tile_colour);
@@ -510,6 +524,7 @@ class NavArea {
                 tile.highlight(recorded_tile_colour);
             }
         }
+        console.log('Finished highlighting');
     }
 
     _addPathFinding() {
@@ -586,9 +601,10 @@ class MainPage {
     }
 
     handle_partial_refresh(func) {
-        //const nav_element = document.getElementById('tdSpaceChart').getElementsByTagName('table')[0];
+        const nav_element = document.getElementById('tdSpaceChart').getElementsByTagName('table')[0];
 
-        const nav_element = document.getElementById('nav').parentNode;
+        // This would be more specific, but it doesn't trigger enough refreshes
+        //const nav_element = document.getElementById('nav').parentNode;
 
         // Options for the observer (which mutations to observe)
         const config = { attributes: false, childList: true, subtree: true };

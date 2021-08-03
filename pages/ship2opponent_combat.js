@@ -17,6 +17,8 @@ class Ship2opponent_combatPage {
         const expected_route = PardusOptionsUtility.getVariableValue('expected_route', []);
         const current_position = userloc.toString();
 
+        const recording_mode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
+
         if (previous_tile_id !== -1 && previous_tile_id !== this.tile_id) {
             if (PardusOptionsUtility.getVariableValue('recording', false)) {
                 const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
@@ -27,10 +29,15 @@ class Ship2opponent_combatPage {
                         if (flown_tile === current_position) {
                             break;
                         }
-                        recorded_tiles.add(flown_tile);
+
+                        if (recording_mode === 'all' || recording_mode === 'good') {
+                            recorded_tiles.add(flown_tile);
+                        }
                     }
 
-                    bad_recorded_tiles.add(current_position);
+                    if (recording_mode === 'all' || recording_mode === 'bad') {
+                        bad_recorded_tiles.add(current_position);
+                    }
                 }
 
                 PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(bad_recorded_tiles));

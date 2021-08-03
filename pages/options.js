@@ -1,4 +1,4 @@
-/* global PardusOptions, PardusOptionsUtility, colours */
+/* global PardusOptions, PardusOptionsUtility, colours, mapper_urls_from_route */
 
 class OptionsPage {
 
@@ -134,6 +134,26 @@ class OptionsPage {
             variable: 'colour_recorded_tiles',
             description: 'Highlight recorded tiles as you fly',
             defaultValue: true
+        });
+
+        recording_general_options.addSelectOption({
+            variable: 'recording_mode',
+            description: 'Record tiles',
+            options: [
+                {
+                    value: 'all',
+                    text: 'All tiles',
+                    default: true
+                },
+                {
+                    value: 'bad',
+                    text: 'Bad tiles only'
+                },
+                {
+                    value: 'good',
+                    text: 'Good tiles only'
+                }
+            ]
         });
 
         recording_general_options.addSelectOption({
