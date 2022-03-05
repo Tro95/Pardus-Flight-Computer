@@ -91,7 +91,8 @@ class OptionsPage {
         const tile_highlight_box = subtab.addBox({
             heading: 'Route Tiles',
             description: 'This is the list of tiles forming the route to highlight.',
-            resetButton: true
+            resetButton: true,
+            presets: 4
         });
 
         tile_highlight_box.addTextAreaOption({
