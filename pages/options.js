@@ -216,7 +216,7 @@ class OptionsPage {
             button_text = 'Stop recording';
         }
 
-        let html = `<tr><td><div><table width="100%"><tbody><tr><td width="1%" style="white-space: nowrap;">Recording status:</td><td><div id="pardus-flight-computer-recording-status">${recording_status}</div></td><td align="right"><input type="button" value="${button_text}" id="${record_button_id}"></td></tr></tbody></table></div></td></tr>`;        return html;
+        return `<tr><td><div><table width="100%"><tbody><tr><td width="1%" style="white-space: nowrap;">Recording status:</td><td><div id="pardus-flight-computer-recording-status">${recording_status}</div></td><td align="right"><input type="button" value="${button_text}" id="${record_button_id}"></td></tr></tbody></table></div></td></tr>`;
     }
 
     static get_recorded_output_box_html() {
@@ -226,7 +226,7 @@ class OptionsPage {
             recording_output = 'No tiles recorded';
         }
 
-        let html = `<tr><td><div><table width="100%"><tbody><tr><td colspan="3"><pre id="pardus-flight-computer-recording-output" style="padding: 5px; border-style: dashed; border-color: yellow; border-width: thin; white-space: pre-wrap; word-wrap: anywhere;">${recording_output}</pre></td></tr><tr><td align="right" colspan="3"><input value="Clear" id="pardus-flight-computer-clear-recording-output" type="button"></td></tr></tbody></table></div></td></tr>`;        return html;
+        return `<tr><td><div><table width="100%"><tbody><tr><td colspan="3"><pre id="pardus-flight-computer-recording-output" style="padding: 5px; border-style: dashed; border-color: yellow; border-width: thin; white-space: pre-wrap; word-wrap: anywhere;">${recording_output}</pre></td></tr><tr><td align="right" colspan="3"><input value="Clear" id="pardus-flight-computer-clear-recording-output" type="button"></td></tr></tbody></table></div></td></tr>`;
     }
 
     recordingToggleAfterRefresh(recording_toggle_box) {
