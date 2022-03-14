@@ -3,6 +3,7 @@
 // @version         0.8.0
 // @description     Flight Computer to assist pathfinding in Pardus
 // @author          Tro (Artemis)
+// @icon            https://static.pardus.at/img/std/equipment/drive_interphased_enhanced.png
 // @include         http*://*.pardus.at/main.php*
 // @include         http*://*.pardus.at/ship2opponent_combat.php*
 // @include         http*://*.pardus.at/options.php
