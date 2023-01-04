@@ -4,9 +4,9 @@
 // @description     Flight Computer to assist pathfinding in Pardus
 // @author          Tro (Artemis)
 // @icon            https://static.pardus.at/img/std/equipment/drive_interphased_enhanced.png
-// @include         http*://*.pardus.at/main.php*
-// @include         http*://*.pardus.at/ship2opponent_combat.php*
-// @include         http*://*.pardus.at/options.php
+// @match           http*://*.pardus.at/main.php*
+// @match           http*://*.pardus.at/ship2opponent_combat.php*
+// @match           http*://*.pardus.at/options.php
 // @grant           GM_setValue
 // @grant           GM_getValue
 // @require         https://raw.githubusercontent.com/Tro95/Pardus-Options-Library/v2.6.0/dist/pardus-options-library.js
