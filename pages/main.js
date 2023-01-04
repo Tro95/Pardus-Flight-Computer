@@ -29,10 +29,15 @@ class Tile {
                 const child_element = this.element.children[0];
 
                 // Can we navigate to the tile?
-                if (child_element.getAttribute('onclick') === null || child_element.getAttribute('onclick').startsWith('warp')) {
+                if ((!child_element.hasAttribute('onclick') || child_element.getAttribute('onclick').startsWith('warp')) && (!child_element.hasAttribute('_onclick') || child_element.getAttribute('_onclick').startsWith('warp'))) {
                     this.tile_id = userloc.toString();
-                } else if (child_element.getAttribute('onclick').startsWith('nav')) {
-                    this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1]; 
+                } else if (child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('nav')) {
+                    this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
+                } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('nav')) {
+                    // Freeze Frame compatibility
+                    this.tile_id = child_element.getAttribute('_onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
+                } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick') === "null") {
+                    this.tile_id = userloc.toString();
                 }
             } else if (this.element.classList.contains('navShip')) {
                 // This only happens on retreating
@@ -63,6 +68,10 @@ class Tile {
 
     isNavigatable() {
         if (!this.isVirtualTile() && this.element && this.element.children.length > 0 && this.element.children[0].getAttribute('onclick') && this.element.children[0].getAttribute('onclick').startsWith('nav') && this.isClickable()) {
+            return true;
+        }
+
+        if (!this.isVirtualTile() && this.element && this.element.children.length > 0 && this.element.children[0].getAttribute('_onclick') && this.element.children[0].getAttribute('_onclick').startsWith('nav') && this.isClickable()) {
             return true;
         }
 
