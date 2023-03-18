@@ -17,6 +17,10 @@ class OptionsPage {
             label: 'Recording',
         });
 
+        this.squads_subtab = this.pardus_flight_computer_tab.addSubTab({
+            label: 'Squads',
+        });
+
         this.colours_selection = [];
         for (const colour in colours) {
             this.colours_selection.push({
@@ -29,6 +33,7 @@ class OptionsPage {
         this.routeHighlightingOptions(this.pardus_flight_computer_tab);
         this.pathHighlightingOptions(this.path_highlighting_subtab);
         this.recordingOptions(this.recording_subtab);
+        this.squadsOptions(this.squads_subtab);
 
         this.pardus_flight_computer_tab.refreshElement();
     }
@@ -116,6 +121,67 @@ class OptionsPage {
 
         tile_highlight_box.addEventListener('reset', () => {
             mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
+            mapper_box.refreshElement();
+        });
+    }
+
+    squadsOptions(subtab) {
+        subtab.addBoxTop({
+            heading: 'Sqauds Route Highlighting',
+            description: 'Squads route highlighting shows a pre-defined route on the nav screen for squads. The route may consist of multiple disjoint and isolated tiles.'
+        });
+
+        const route_highlighting_general_options = subtab.addBox({
+            heading: 'General Options',
+            description: 'These are the general options for route highlighting.'
+        });
+
+        route_highlighting_general_options.addBooleanOption({
+            variable: 'squads_highlight_tiles',
+            description: 'Enable sqauds route highlighting',
+            defaultValue: true
+        });
+
+        route_highlighting_general_options.addSelectOption({
+            variable: 'sqauds_default_colour',
+            description: 'Default colour for sqauds route highlighting',
+            options: this.colours_selection,
+            defaultValue: 'g',
+            inheritStyle: true,
+            info: {
+                title: 'Route Highlighting Colour',
+                description: 'This option specifies the colour that is used to highlight tiles on the route when no colour is specified alongside the tile id. The colour of individual tiles may be overriden by specifying <code>{tile_id}|{colour}</code> within the route box, where colours are denoted by one of <code>g</code>, <code>r</code>, <code>b</code>, or <code>y</code>.'
+            }
+        });
+
+        const tile_highlight_box = subtab.addBox({
+            heading: 'Route Tiles',
+            description: 'This is the list of tiles forming the route to highlight.',
+            resetButton: true,
+            presets: 4
+        });
+
+        tile_highlight_box.addTextAreaOption({
+            variable: 'squads_tiles_to_highlight',
+            defaultValue: '',
+            cols: 64,
+            rows: 3
+        });
+
+        const mapper_box = subtab.addBox({
+            heading: 'Mapper',
+            description: 'The links below let you view the currently-stored route.'
+        });
+
+        mapper_box.innerHtml = OptionsPage.get_mapper_box_html(true);
+
+        tile_highlight_box.addEventListener('save', () => {
+            mapper_box.innerHtml = OptionsPage.get_mapper_box_html(true);
+            mapper_box.refreshElement();
+        });
+
+        tile_highlight_box.addEventListener('reset', () => {
+            mapper_box.innerHtml = OptionsPage.get_mapper_box_html(true);
             mapper_box.refreshElement();
         });
     }
@@ -252,8 +318,8 @@ class OptionsPage {
         });        
     }
 
-    static get_mapper_box_html() {
-        const coloured_tiles_to_highlight = PardusOptionsUtility.getVariableValue('tiles_to_highlight', '').split(',');
+    static get_mapper_box_html(squads = false) {
+        const coloured_tiles_to_highlight = PardusOptionsUtility.getVariableValue(squads ? 'squads_tiles_to_highlight' : 'tiles_to_highlight', '').split(',');
         const tiles_to_highlight = [];
 
         for (const tile of coloured_tiles_to_highlight) {

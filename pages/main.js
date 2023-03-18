@@ -24,26 +24,38 @@ class Tile {
 
             // Get the tile id
             if (this.element.classList.contains('navShip') && this.element.querySelector('#thisShip')) {
-                this.tile_id = userloc.toString();
+                this.tile_id = this.getUserloc();
             } else if (this.element.children.length > 0 && this.element.children[0].tagName === 'A') {
 
                 const child_element = this.element.children[0];
 
                 // Can we navigate to the tile?
                 if ((!child_element.hasAttribute('onclick') || child_element.getAttribute('onclick').startsWith('warp')) && (!child_element.hasAttribute('_onclick') || child_element.getAttribute('_onclick').startsWith('warp'))) {
-                    this.tile_id = userloc.toString();
+                    this.tile_id = this.getUserloc();
                 } else if (child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('nav')) {
                     this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
                 } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('nav')) {
                     // Freeze Frame compatibility
                     this.tile_id = child_element.getAttribute('_onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
                 } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick') === "null") {
-                    this.tile_id = userloc.toString();
+                    this.tile_id = this.getUserloc();
                 }
             } else if (this.element.classList.contains('navShip')) {
                 // This only happens on retreating
-                this.tile_id = userloc.toString();
+                this.tile_id = this.getUserloc();
             }
+        }
+    }
+
+    setId(id) {
+        this.tile_id = id;
+    }
+
+    getUserloc() {
+        if (typeof userloc !== 'undefined') {
+            return userloc.toString();
+        } else {
+            return '-1';
         }
     }
 
@@ -267,6 +279,9 @@ class NavArea {
     }) {
         this.tiles_to_highlight = tiles_to_highlight;
         this.isSquad = options.squad;
+
+        this.optionsPrefix = this.isSquad ? 'squads_' : '';
+
         this.reload();
     }
 
@@ -398,11 +413,23 @@ class NavArea {
         this.grid = [];
         this.tiles_map = new Map();
 
+        let scanned_x = 0;
+        let scanned_y = 0;
+
         for (const row of this.nav_element.rows) {
             const row_arr = [];
 
             for (const tile_td of row.children) {
-                const tile_number = parseInt(tile_td.id.match(/[^\d]*(\d*)/)[1]);
+
+                let tile_number;
+
+                /* There's probably no reason not to use the squad logic for normal ships, too */
+                if (this.isSquad) {
+                    tile_number = (scanned_y * this.width) + scanned_x;
+                } else {
+                    tile_number = parseInt(tile_td.id.match(/[^\d]*(\d*)/)[1]);
+                }
+
                 const tile_x = tile_number % this.width;
                 const tile_y = Math.floor(tile_number / this.width);
 
@@ -410,9 +437,13 @@ class NavArea {
 
                 row_arr.push(tile);
                 this.tiles_map.set(tile.tile_id, tile);
+
+                scanned_x++;
             }
 
             this.grid.push(row_arr);
+            scanned_y++;
+            scanned_x = 0;
         }
 
         const centre_x = Math.floor(this.width / 2);
@@ -421,11 +452,18 @@ class NavArea {
         this.centre_tile = this.grid[centre_y][centre_x];
         this.centre_tile.is_centre_tile = true;
 
+        /* For squads or other situations where no userloc is available */
+        if (this.centre_tile.tile_id === '-1') {
+            if (this.grid[centre_y - 1][centre_x].tile_id !== '-1') {
+                const newId = parseInt(this.grid[centre_y - 1][centre_x].tile_id) + 1;
+                this.centre_tile.setId(newId.toString());
+            }
+        }
+
+        this._highlightTiles();
+
         if (!this.isSquad) {
-            this._highlightTiles();
             this._addRecording();
-        } else {
-            console.log(`Centre tile is ${this.centre_tile}`)
         }
 
         if (PardusOptionsUtility.getVariableValue('show_pathing', true)) {
@@ -524,7 +562,7 @@ class NavArea {
 
     _highlightTiles() {
 
-        const highlight_tiles = PardusOptionsUtility.getVariableValue('highlight_tiles', true);
+        const highlight_tiles = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}highlight_tiles`, true);
 
         if (!highlight_tiles) {
             return;
@@ -537,11 +575,11 @@ class NavArea {
         const bad_recorded_tile_colour = PardusOptionsUtility.getVariableValue('bad_recorded_tile_colour', 'r');
 
         for (const tile of this.clickableTiles()) {
-            if (colour_recorded_tiles && bad_recorded_tiles.has(tile.tile_id)) {
+            if (!this.isSquad && colour_recorded_tiles && bad_recorded_tiles.has(tile.tile_id)) {
                 tile.highlight(bad_recorded_tile_colour);
             } else if (this.tiles_to_highlight.has(tile.tile_id)) {
                 tile.highlight(this.tiles_to_highlight.get(tile.tile_id));
-            } else if (colour_recorded_tiles && recorded_tiles.has(tile.tile_id)) {
+            } else if (!this.isSquad && colour_recorded_tiles && recorded_tiles.has(tile.tile_id)) {
                 tile.highlight(recorded_tile_colour);
             }
         }
@@ -600,8 +638,9 @@ class MainPage {
     constructor(options = {
         squad: false
     }) {
-        this.tile_string = PardusOptionsUtility.getVariableValue('tiles_to_highlight', '');
-        this.default_colour = PardusOptionsUtility.getVariableValue('default_colour', 'g');
+        this.optionsPrefix = options.squad ? 'squads_' : '';
+        this.tile_string = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
+        this.default_colour = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}default_colour`, 'g');
         this.tile_set = new Map();
 
         // Initialise the tile set
