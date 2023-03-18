@@ -17,6 +17,10 @@ class OptionsPage {
             label: 'Recording',
         });
 
+        this.autopilot_subtab = this.pardus_flight_computer_tab.addSubTab({
+            label: 'Autopilot',
+        });
+
         this.colours_selection = [];
         for (const colour in colours) {
             this.colours_selection.push({
@@ -29,8 +33,38 @@ class OptionsPage {
         this.routeHighlightingOptions(this.pardus_flight_computer_tab);
         this.pathHighlightingOptions(this.path_highlighting_subtab);
         this.recordingOptions(this.recording_subtab);
+        this.autopilotOptions(this.autopilot_subtab);
 
         this.pardus_flight_computer_tab.refreshElement();
+    }
+
+    autopilotOptions(subtab) {
+        subtab.addBoxTop({
+            heading: 'Autopilot',
+            description: 'Allows you to automatically fly along a pre-programmed route'
+        });
+
+        const autopilot_general_options = subtab.addBox({
+            heading: 'General Options',
+            description: 'These are the general options for autopilot.'
+        });
+
+        autopilot_general_options.addBooleanOption({
+            variable: 'enable_autopilot',
+            description: 'Enable autopilot',
+            defaultValue: true
+        });
+
+        const keyboard_options = subtab.addBox({
+            heading: 'Keyboard Options',
+            description: 'Set the keys for autopilot.'
+        });
+
+        keyboard_options.addKeyDownOption({
+            variable: 'move_along_path_key',
+            description: 'Fly to the next tile',
+            defaultValue: 'f'
+        });
     }
 
     pathHighlightingOptions(subtab) {

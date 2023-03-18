@@ -9,6 +9,7 @@ class Tile {
         this.emphasised = false;
         this.path_highlighted = false;
         this.virtual_tile = virtual_tile;
+        this.wormhole = false;
 
         if (this.isVirtualTile()) {
             this.tile_id = tile_id.toString();
@@ -261,8 +262,11 @@ class Tile {
 }
 
 class NavArea {
-    constructor(tiles_to_highlight = new Map()) {
+    constructor(tiles_to_highlight = new Map(), options = {
+        squad: false
+    }) {
         this.tiles_to_highlight = tiles_to_highlight;
+        this.isSquad = options.squad;
         this.reload();
     }
 
@@ -394,8 +398,6 @@ class NavArea {
         this.grid = [];
         this.tiles_map = new Map();
 
-        let hovered_tile = null;
-
         for (const row of this.nav_element.rows) {
             const row_arr = [];
 
@@ -419,8 +421,12 @@ class NavArea {
         this.centre_tile = this.grid[centre_y][centre_x];
         this.centre_tile.is_centre_tile = true;
 
-        this._highlightTiles();
-        this._addRecording();
+        if (!this.isSquad) {
+            this._highlightTiles();
+            this._addRecording();
+        } else {
+            console.log(`Centre tile is ${this.centre_tile}`)
+        }
 
         if (PardusOptionsUtility.getVariableValue('show_pathing', true)) {
             this._addPathFinding();
@@ -457,6 +463,16 @@ class NavArea {
                 yield tile;
             }
         }
+    }
+
+    getTileOnNav(tile_id) {
+        for (const tile of this.tiles()) {
+            if (tile.tile_id === tile_id) {
+                return tile;
+            }
+        }
+
+        return null;
     }
 
     _addRecording() {
@@ -577,11 +593,65 @@ class NavArea {
             }
         }
     }
+
+    fly() {
+        const path = ["139442","139477","139512","139547","139582","139581","139580","139579","139614","139649", "160994"];
+        const forward_direction = false;
+        const max_steps = 10;
+
+        let path_to_fly = path;
+
+        if (!forward_direction) {
+            path_to_fly.reverse()
+        }
+
+        const current_location = this.centre_tile.tile_id;
+        const current_index_on_path = path_to_fly.indexOf(current_location);
+
+        if (current_index_on_path < 0) {
+            // console.log(this.centre_tile);
+            // console.log('Not on the path!')
+            return;
+        }
+
+        if (current_index_on_path === path_to_fly.length - 1) {
+            // console.log('Reached the end of the path!')
+            return;
+        }
+
+        let index_to_fly_to = 1;
+
+        for (let step = index_to_fly_to; step < max_steps; step++) {
+            if (current_index_on_path + step > path_to_fly.length - 1) {
+                break;
+            }
+
+            const target_tile = this.getTileOnNav(path_to_fly[current_index_on_path + step])
+
+            // If the tile is not on the nav screen
+            if (!target_tile) {
+                break;
+            }
+
+            const direct_route = this.getPathTo(target_tile);
+
+            // Is the tile before the same? Due to recursion, this should be fine
+            if (direct_route[direct_route.length - 2].tile_id === path_to_fly[current_index_on_path + step - 1]) {
+                index_to_fly_to = step;
+            } else {
+                break;
+            }
+        }
+
+        navAjax(path_to_fly[current_index_on_path + index_to_fly_to]);
+    }
 }
 
 class MainPage {
 
-    constructor() {
+    constructor(options = {
+        squad: false
+    }) {
         this.tile_string = PardusOptionsUtility.getVariableValue('tiles_to_highlight', '');
         this.default_colour = PardusOptionsUtility.getVariableValue('default_colour', 'g');
         this.tile_set = new Map();
@@ -597,15 +667,43 @@ class MainPage {
             }
         }
 
-        this.nav_area = new NavArea(this.tile_set);
+        this.nav_area = new NavArea(this.tile_set, options);
+        this._addAutopilot();
 
         this.handle_partial_refresh(() => {
             this.nav_area.reload();
         });
     }
 
+    _addAutopilot() {
+
+        if (!PardusOptionsUtility.getVariableValue('colour_recorded_tiles', true)) {
+            return;
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.isComposing || event.keyCode === 229 || event.repeat) {
+                return;
+            }
+
+            const move_along_path_key = PardusOptionsUtility.getVariableValue('move_along_path_key');
+
+            if (!move_along_path_key) {
+                return;
+            }
+
+            if (event.keyCode !== PardusOptionsUtility.getVariableValue('move_along_path_key').code) {
+                return;
+            }
+
+            this.nav_area.fly();
+        });
+    }
+
     handle_partial_refresh(func) {
-        const nav_element = document.getElementById('tdSpaceChart').getElementsByTagName('table')[0];
+        const main_element = document.getElementById('tdSpaceChart');
+
+        const nav_element = main_element ? document.getElementById('tdSpaceChart').getElementsByTagName('table')[0] : document.querySelectorAll('table td[valign="top"]')[1];
 
         // This would be more specific, but it doesn't trigger enough refreshes
         //const nav_element = document.getElementById('nav').parentNode;

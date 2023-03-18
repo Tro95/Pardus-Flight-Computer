@@ -5,6 +5,7 @@
 // @author          Tro (Artemis)
 // @icon            https://static.pardus.at/img/std/equipment/drive_interphased_enhanced.png
 // @match           http*://*.pardus.at/main.php*
+// @match           http*://*.pardus.at/squad_main.php*
 // @match           http*://*.pardus.at/ship2opponent_combat.php*
 // @match           http*://*.pardus.at/options.php
 // @grant           GM_setValue
@@ -28,6 +29,9 @@ switch (document.location.pathname) {
         break;
     case '/main.php':
         new MainPage();
+        break;
+    case '/squad_main.php':
+        new MainPage({squad: true});
         break;
     case '/ship2opponent_combat.php':
         new Ship2opponent_combatPage();
