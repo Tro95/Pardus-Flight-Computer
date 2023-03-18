@@ -9,6 +9,7 @@ class Tile {
         this.emphasised = false;
         this.path_highlighted = false;
         this.virtual_tile = virtual_tile;
+        this.wormhole = false;
 
         if (this.isVirtualTile()) {
             this.tile_id = tile_id.toString();
@@ -261,8 +262,11 @@ class Tile {
 }
 
 class NavArea {
-    constructor(tiles_to_highlight = new Map()) {
+    constructor(tiles_to_highlight = new Map(), options = {
+        squad: false
+    }) {
         this.tiles_to_highlight = tiles_to_highlight;
+        this.isSquad = options.squad;
         this.reload();
     }
 
@@ -394,8 +398,6 @@ class NavArea {
         this.grid = [];
         this.tiles_map = new Map();
 
-        let hovered_tile = null;
-
         for (const row of this.nav_element.rows) {
             const row_arr = [];
 
@@ -419,8 +421,12 @@ class NavArea {
         this.centre_tile = this.grid[centre_y][centre_x];
         this.centre_tile.is_centre_tile = true;
 
-        this._highlightTiles();
-        this._addRecording();
+        if (!this.isSquad) {
+            this._highlightTiles();
+            this._addRecording();
+        } else {
+            console.log(`Centre tile is ${this.centre_tile}`)
+        }
 
         if (PardusOptionsUtility.getVariableValue('show_pathing', true)) {
             this._addPathFinding();
@@ -457,6 +463,16 @@ class NavArea {
                 yield tile;
             }
         }
+    }
+
+    getTileOnNav(tile_id) {
+        for (const tile of this.tiles()) {
+            if (tile.tile_id === tile_id) {
+                return tile;
+            }
+        }
+
+        return null;
     }
 
     _addRecording() {
@@ -581,7 +597,9 @@ class NavArea {
 
 class MainPage {
 
-    constructor() {
+    constructor(options = {
+        squad: false
+    }) {
         this.tile_string = PardusOptionsUtility.getVariableValue('tiles_to_highlight', '');
         this.default_colour = PardusOptionsUtility.getVariableValue('default_colour', 'g');
         this.tile_set = new Map();
@@ -597,7 +615,7 @@ class MainPage {
             }
         }
 
-        this.nav_area = new NavArea(this.tile_set);
+        this.nav_area = new NavArea(this.tile_set, options);
 
         this.handle_partial_refresh(() => {
             this.nav_area.reload();
@@ -605,7 +623,9 @@ class MainPage {
     }
 
     handle_partial_refresh(func) {
-        const nav_element = document.getElementById('tdSpaceChart').getElementsByTagName('table')[0];
+        const main_element = document.getElementById('tdSpaceChart');
+
+        const nav_element = main_element ? document.getElementById('tdSpaceChart').getElementsByTagName('table')[0] : document.querySelectorAll('table td[valign="top"]')[1];
 
         // This would be more specific, but it doesn't trigger enough refreshes
         //const nav_element = document.getElementById('nav').parentNode;
