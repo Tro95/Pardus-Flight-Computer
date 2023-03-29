@@ -32,6 +32,10 @@ class Tile {
                 // Can we navigate to the tile?
                 if ((!child_element.hasAttribute('onclick') || child_element.getAttribute('onclick').startsWith('warp')) && (!child_element.hasAttribute('_onclick') || child_element.getAttribute('_onclick').startsWith('warp'))) {
                     this.tile_id = this.getUserloc();
+
+                    if ((child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('warp')) || (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('warp'))) {
+                        this.wormhole = true;
+                    }
                 } else if (child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('nav')) {
                     this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
                 } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('nav')) {
@@ -45,6 +49,10 @@ class Tile {
                 this.tile_id = this.getUserloc();
             }
         }
+    }
+
+    isWormhole() {
+        return this.wormhole;
     }
 
     setId(id) {
@@ -633,8 +641,8 @@ class NavArea {
     }
 
     fly() {
-        const path = ["139442","139477","139512","139547","139582","139581","139580","139579","139614","139649", "160994"];
-        const forward_direction = false;
+        const path = PardusOptionsUtility.getVariableValue('autopilot_route', []).split(',');
+        const forward_direction = PardusOptionsUtility.getVariableValue('autopilot_forward', true);
         const max_steps = 10;
 
         let path_to_fly = path;
@@ -646,20 +654,25 @@ class NavArea {
         const current_location = this.centre_tile.tile_id;
         const current_index_on_path = path_to_fly.indexOf(current_location);
 
+        // Do not fly if we are not currently on the path
         if (current_index_on_path < 0) {
-            // console.log(this.centre_tile);
-            // console.log('Not on the path!')
             return;
         }
 
+        // Are we at the end of the path?
         if (current_index_on_path === path_to_fly.length - 1) {
-            // console.log('Reached the end of the path!')
             return;
         }
 
+        // By default, move one tile along the path
         let index_to_fly_to = 1;
 
-        for (let step = index_to_fly_to; step < max_steps; step++) {
+        if (this.centre_tile.isWormhole()) {
+            index_to_fly_to = 0;
+        }
+
+        // Now try to see if we can move further along the path in a single click
+        for (let step = 1; step < max_steps; step++) {
             if (current_index_on_path + step > path_to_fly.length - 1) {
                 break;
             }
@@ -681,7 +694,35 @@ class NavArea {
             }
         }
 
-        navAjax(path_to_fly[current_index_on_path + index_to_fly_to]);
+        if (index_to_fly_to > 0) {
+            this._nav(path_to_fly[current_index_on_path + index_to_fly_to]);
+        } else {
+            this._warp(path_to_fly[current_index_on_path]);
+        }
+    }
+
+    _nav(tile_id) {
+        if (typeof navAjax === 'function') {
+            return navAjax(tile_id);
+        }
+
+        if (typeof nav === 'function') {
+            return nav(tile_id);
+        }
+
+        throw new Error('No function for nav or navAjax found!');
+    }
+
+    _warp(tile_id) {
+        if (typeof warpAjax === 'function') {
+            return warpAjax(tile_id);
+        }
+
+        if (typeof warp === 'function') {
+            return warp(tile_id);
+        }
+
+        throw new Error('No function for warp or warpAjax found!');
     }
 }
 
@@ -707,6 +748,7 @@ class MainPage {
         }
 
         this.nav_area = new NavArea(this.tile_set, options);
+        this._addAutopilot();
 
         this.handle_partial_refresh(() => {
             this.nav_area.reload();
@@ -714,26 +756,11 @@ class MainPage {
     }
 
     _addAutopilot() {
-
-        if (!PardusOptionsUtility.getVariableValue('colour_recorded_tiles', true)) {
+        if (!PardusOptionsUtility.getVariableValue('enable_autopilot', true)) {
             return;
         }
 
-        document.addEventListener("keydown", (event) => {
-            if (event.isComposing || event.keyCode === 229 || event.repeat) {
-                return;
-            }
-
-            const move_along_path_key = PardusOptionsUtility.getVariableValue('move_along_path_key');
-
-            if (!move_along_path_key) {
-                return;
-            }
-
-            if (event.keyCode !== PardusOptionsUtility.getVariableValue('move_along_path_key').code) {
-                return;
-            }
-
+        document.addPardusKeyDownListener('move_along_path_key', {code: 70}, () => {
             this.nav_area.fly();
         });
     }

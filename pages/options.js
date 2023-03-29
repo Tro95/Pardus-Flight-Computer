@@ -17,6 +17,10 @@ class OptionsPage {
             label: 'Recording',
         });
 
+        this.autopilot_subtab = this.pardus_flight_computer_tab.addSubTab({
+            label: 'Autopilot',
+        });
+
         this.squads_subtab = this.pardus_flight_computer_tab.addSubTab({
             label: 'Squads',
         });
@@ -33,6 +37,7 @@ class OptionsPage {
         this.routeHighlightingOptions(this.pardus_flight_computer_tab);
         this.pathHighlightingOptions(this.path_highlighting_subtab);
         this.recordingOptions(this.recording_subtab);
+        this.autopilotOptions(this.autopilot_subtab);
         this.squadsOptions(this.squads_subtab);
 
         this.pardus_flight_computer_tab.refreshElement();
@@ -55,6 +60,12 @@ class OptionsPage {
             defaultValue: true
         });
 
+        autopilot_general_options.addBooleanOption({
+            variable: 'autopilot_forward',
+            description: 'Forward direction',
+            defaultValue: true
+        });
+
         const keyboard_options = subtab.addBox({
             heading: 'Keyboard Options',
             description: 'Set the keys for autopilot.'
@@ -63,7 +74,25 @@ class OptionsPage {
         keyboard_options.addKeyDownOption({
             variable: 'move_along_path_key',
             description: 'Fly to the next tile',
-            defaultValue: 'f'
+            defaultValue: {
+                code: 70,
+                key: "KeyF",
+                description: "f"
+            }
+        });
+
+        const autopilot_path_box = subtab.addBox({
+            heading: 'Autopilot Tiles',
+            description: 'This is the list of tiles forming the route to fly along.',
+            resetButton: true,
+            presets: 4
+        });
+
+        autopilot_path_box.addTextAreaOption({
+            variable: 'autopilot_route',
+            defaultValue: '',
+            cols: 64,
+            rows: 3
         });
     }
 
