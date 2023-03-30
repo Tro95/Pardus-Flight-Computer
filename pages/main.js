@@ -1,4 +1,4 @@
-/* global PardusOptionsUtility, colours, userloc, get_sector_coords_obj */
+/* global PardusOptionsUtility, colours, userloc, get_sector_coords_obj, nav, navAjax, warp, warpX */
 
 class Tile {
     constructor(element, x, y, tile_id = null, virtual_tile = false) {
@@ -763,8 +763,8 @@ class NavArea {
             throw new Error(`Destination ${tile_id} is not a valid X-hole!`);
         }
 
-        document.getElementById('xholebox').elements['warpx'].value = tile_id;
-        
+        document.getElementById('xholebox').elements.warpx.value = tile_id;
+
         if (typeof warpX === 'function') {
             return warpX();
         }
