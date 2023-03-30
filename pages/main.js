@@ -702,6 +702,11 @@ class NavArea {
 
             const direct_route = this.getPathTo(target_tile);
 
+            if (direct_route.length <= 1) {
+                index_to_fly_to = 0;
+                break;
+            }
+
             // Is the tile before the same? Due to recursion, this should be fine
             if (direct_route[direct_route.length - 2].tile_id === path_to_fly[current_index_on_path + step - 1]) {
                 index_to_fly_to = step;
