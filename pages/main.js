@@ -9,7 +9,7 @@ class Tile {
         this.emphasised = false;
         this.path_highlighted = false;
         this.virtual_tile = virtual_tile;
-        this.wormhole = false;
+        this.type = 'regular';
 
         if (this.isVirtualTile()) {
             this.tile_id = tile_id.toString();
@@ -34,10 +34,18 @@ class Tile {
                     this.tile_id = this.getUserloc();
 
                     if ((child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('warp')) || (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('warp'))) {
-                        this.wormhole = true;
+                        this.type = 'wormhole';
                     }
                 } else if (child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('nav')) {
                     this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
+
+                    if (this.element.classList.contains('navYhole')) {
+                        this.type = 'y-hole';
+                    }
+
+                    if (this.element.classList.contains('navXhole')) {
+                        this.type = 'x-hole';
+                    }
                 } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('nav')) {
                     // Freeze Frame compatibility
                     this.tile_id = child_element.getAttribute('_onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
@@ -52,7 +60,15 @@ class Tile {
     }
 
     isWormhole() {
-        return this.wormhole;
+        return this.type === 'wormhole';
+    }
+
+    isXHole() {
+        return this.type === 'x-hole';
+    }
+
+    isYHole() {
+        return this.type === 'y-hole';
     }
 
     setId(id) {
@@ -667,7 +683,7 @@ class NavArea {
         // By default, move one tile along the path
         let index_to_fly_to = 1;
 
-        if (this.centre_tile.isWormhole()) {
+        if (this.centre_tile.isWormhole() || this.centre_tile.isXHole() || this.centre_tile.isYHole()) {
             index_to_fly_to = 0;
         }
 
@@ -696,8 +712,10 @@ class NavArea {
 
         if (index_to_fly_to > 0) {
             this._nav(path_to_fly[current_index_on_path + index_to_fly_to]);
-        } else {
-            this._warp(path_to_fly[current_index_on_path]);
+        } else if (this.centre_tile.isWormhole()) {
+            this._warp(path_to_fly[current_index_on_path]);  
+        } else if (this.centre_tile.isXHole() || this.centre_tile.isYHole()) {
+            this._xhole(path_to_fly[current_index_on_path + 1]);
         }
     }
 
@@ -723,6 +741,30 @@ class NavArea {
         }
 
         throw new Error('No function for warp or warpAjax found!');
+    }
+
+    _xhole(tile_id) {
+        const validXHoles = [
+            '44580', // Nex-0002
+            '47811', // Nex-Kataam
+            '55343', // Nex-0003
+            '83339', // Nex-0001
+            '97698', // Nex-0004
+            '324730', // Nex-0005
+            '379305', // Nex-0006
+        ];
+
+        if (!validXHoles.includes(tile_id)) {
+            throw new Error(`Destination ${tile_id} is not a valid X-hole!`);
+        }
+
+        document.getElementById('xholebox').elements['warpx'].value = tile_id;
+        
+        if (typeof warpX === 'function') {
+            return warpX();
+        }
+
+        return document.getElementById("xholebox").submit()
     }
 }
 
