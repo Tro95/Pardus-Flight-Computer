@@ -66,19 +66,12 @@ class OptionsPage {
             defaultValue: true
         });
 
-        const keyboard_options = subtab.addBox({
-            heading: 'Keyboard Options',
-            description: 'Set the keys for autopilot.'
-        });
-
-        keyboard_options.addKeyDownOption({
-            variable: 'move_along_path_key',
-            description: 'Fly to the next tile',
-            defaultValue: {
-                code: 70,
-                key: "KeyF",
-                description: "f"
-            }
+        autopilot_general_options.addNumericOption({
+            variable: 'autopilot_max_steps',
+            description: 'Maximum steps',
+            defaultValue: 10,
+            min: 1,
+            max: 10,
         });
 
         const autopilot_path_box = subtab.addBox({
@@ -93,6 +86,21 @@ class OptionsPage {
             defaultValue: '',
             cols: 64,
             rows: 3
+        });
+
+        const keyboard_options = subtab.addBox({
+            heading: 'Keyboard Options',
+            description: 'Set the keys for autopilot.'
+        });
+
+        keyboard_options.addKeyDownOption({
+            variable: 'move_along_path_key',
+            description: 'Fly to the next tile',
+            defaultValue: {
+                code: 70,
+                key: "KeyF",
+                description: "f"
+            }
         });
     }
 

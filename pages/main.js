@@ -659,7 +659,7 @@ class NavArea {
     fly() {
         const path = PardusOptionsUtility.getVariableValue('autopilot_route', []).split(',');
         const forward_direction = PardusOptionsUtility.getVariableValue('autopilot_forward', true);
-        const max_steps = 10;
+        const max_steps = PardusOptionsUtility.getVariableValue('autopilot_max_steps', 10);
 
         let path_to_fly = path;
 
