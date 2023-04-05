@@ -297,6 +297,16 @@ class OptionsPage {
             inheritStyle: true,
         });
 
+        recording_general_options.addKeyDownOption({
+            variable: 'toggle_recording_keypress',
+            description: 'Start/stop recording',
+            defaultValue: {
+                code: 82,
+                key: "KeyR",
+                description: "r"
+            }
+        });
+
         const bad_recorded_tiles_colour_option = recording_general_options.addSelectOption({
             variable: 'bad_recorded_tile_colour',
             description: 'Colour to highlight bad tiles',

@@ -544,6 +544,10 @@ class NavArea {
 
         const recording_mode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
 
+        document.addPardusKeyDownListener('toggle_recording_keypress', {code: 82}, () => {
+            PardusOptionsUtility.setVariableValue('recording', !PardusOptionsUtility.getVariableValue('recording', false));
+        });
+
         if (PardusOptionsUtility.getVariableValue('recording', false)) {
 
             const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
