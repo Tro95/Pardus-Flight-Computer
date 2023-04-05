@@ -2,15 +2,18 @@
 
 class MsgFramePage {
     constructor() {
-        const centreTd = document.querySelector('td[align="center"]');
+        this.centreTd = document.querySelector('td[align="center"]');
 
-        document.addEventListener('pardus-message', (event) => {
-            this.addMessage(event.msg, event.type);
-        });
+        if (window.parent) {
+            window.parent.window.addEventListener('pardus-message', (event) => {
+                console.log('Received pardus message!');
+                this.addMessage(event.detail.msg, event.detail.type);
+            });
+        }
     }
 
     hasMessage() {
-        if (centreTd.querySelector('table')) {
+        if (this.centreTd.querySelector('table')) {
             return true;
         }
 
@@ -33,10 +36,18 @@ class MsgFramePage {
 
     _setMessage(msg, icon, colour) {
         const str = `<table style="background-image:url(${PardusOptionsUtility.getImagePackUrl()}bgmedium.gif);border-style:ridge;border-color:#2b2b51;border-width:2px;" cellspacing="0" cellpadding="0" align="center"><tbody><tr><td><img src="${PardusOptionsUtility.getImagePackUrl()}${icon}.png" alt="" width="32" height="32"></td><td style="padding-left:2px;padding-right:4px;"><font style="font-weight:bold;font-size:13px;" color="${colour}"> ${msg}</font></td></tr></tbody></table>`;
-        centreTd.innerHTML = str;
+        this.centreTd.innerHTML = str;
     }
 
     addErrorMessage(msg) {
 
+    }
+
+    static sendMessage(msg, type) {
+        if (window.parent) {
+            return window.parent.window.dispatchEvent(new CustomEvent('pardus-message', {detail: {msg, type}}));
+        }
+
+        return window.dispatchEvent(new CustomEvent('pardus-message', {detail: {msg, type}}));
     }
 }

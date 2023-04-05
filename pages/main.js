@@ -1,4 +1,4 @@
-/* global PardusOptionsUtility, colours, userloc, get_sector_coords_obj, nav, navAjax, warp, warpAjax, warpX */
+/* global PardusOptionsUtility, MsgFramePage, colours, userloc, get_sector_coords_obj, nav, navAjax, warp, warpAjax, warpX */
 
 class Tile {
     constructor(element, x, y, tile_id = null, virtual_tile = false) {
@@ -537,6 +537,19 @@ class NavArea {
         return null;
     }
 
+    _addRecordingToggleHander(event) {
+        const recording = PardusOptionsUtility.getVariableValue('recording', false);
+
+        if (recording) {
+            MsgFramePage.sendMessage('Recording stopped', 'info');
+        } else {
+            MsgFramePage.sendMessage('Recording started', 'info');
+        }
+
+        PardusOptionsUtility.setVariableValue('recording', !recording);
+        event.stopPropagation();
+    }
+
     _addRecording() {
         const previous_tile_id = PardusOptionsUtility.getVariableValue('last_tile_id', -1);
         const current_position = userloc.toString();
@@ -544,9 +557,7 @@ class NavArea {
 
         const recording_mode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
 
-        document.addPardusKeyDownListener('toggle_recording_keypress', {code: 82}, () => {
-            PardusOptionsUtility.setVariableValue('recording', !PardusOptionsUtility.getVariableValue('recording', false));
-        });
+        document.addPardusKeyDownListener('toggle_recording_keypress', {code: 82}, this._addRecordingToggleHander);
 
         if (PardusOptionsUtility.getVariableValue('recording', false)) {
 

@@ -297,17 +297,7 @@ class OptionsPage {
             inheritStyle: true,
         });
 
-        recording_general_options.addKeyDownOption({
-            variable: 'toggle_recording_keypress',
-            description: 'Start/stop recording',
-            defaultValue: {
-                code: 82,
-                key: "KeyR",
-                description: "r"
-            }
-        });
-
-        const bad_recorded_tiles_colour_option = recording_general_options.addSelectOption({
+        recording_general_options.addSelectOption({
             variable: 'bad_recorded_tile_colour',
             description: 'Colour to highlight bad tiles',
             options: this.colours_selection,
@@ -316,6 +306,16 @@ class OptionsPage {
             info: {
                 title: 'Bad Tile Recording and Highlighting',
                 description: 'This option enables recording of tiles when you encounter an NPC, colouring them differently to normal recorded tiles, and saving them separately.'
+            }
+        });
+
+        recording_general_options.addKeyDownOption({
+            variable: 'toggle_recording_keypress',
+            description: 'Start/stop recording',
+            defaultValue: {
+                code: 82,
+                key: "KeyR",
+                description: "r"
             }
         });
 
