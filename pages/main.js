@@ -687,11 +687,13 @@ class NavArea {
 
         // Do not fly if we are not currently on the path
         if (current_index_on_path < 0) {
+            MsgFramePage.sendMessage('You are not on the autopilot path', 'error');
             return;
         }
 
         // Are we at the end of the path?
         if (current_index_on_path === path_to_fly.length - 1) {
+            MsgFramePage.sendMessage('Autopilot has reached the end of the path', 'info');
             return;
         }
 
