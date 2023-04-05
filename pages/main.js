@@ -1,4 +1,4 @@
-/* global PardusOptionsUtility, colours, userloc, get_sector_coords_obj, nav, navAjax, warp, warpX */
+/* global PardusOptionsUtility, colours, userloc, get_sector_coords_obj, nav, navAjax, warp, warpAjax, warpX */
 
 class Tile {
     constructor(element, x, y, tile_id = null, virtual_tile = false) {
