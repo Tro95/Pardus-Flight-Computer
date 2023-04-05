@@ -547,7 +547,6 @@ class NavArea {
         }
 
         PardusOptionsUtility.setVariableValue('recording', !recording);
-        event.stopPropagation();
     }
 
     _addRecording() {
