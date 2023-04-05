@@ -23,7 +23,7 @@
 // @updateURL       https://github.com/Tro95/Pardus-Flight-Computer/raw/autopilot/pardus_flight_computer.meta.js
 // ==/UserScript==
 
-/* global OptionsPage, MainPage, Ship2opponent_combatPage */
+/* global OptionsPage, MainPage, MsgFramePage, Ship2opponent_combatPage */
 
 switch (document.location.pathname) {
     case '/options.php':
