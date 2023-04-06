@@ -704,7 +704,7 @@ class NavArea {
         }
 
         // Now try to see if we can move further along the path in a single click
-        for (let step = 1; step < max_steps; step++) {
+        for (let step = 1; step <= max_steps; step++) {
             if (current_index_on_path + step > path_to_fly.length - 1) {
                 break;
             }
