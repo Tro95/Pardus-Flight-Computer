@@ -723,8 +723,12 @@ class NavArea {
                 break;
             }
 
-            // Is the tile before the same? Due to recursion, this should be fine
-            if (direct_route[direct_route.length - 2].tile_id === path_to_fly[current_index_on_path + step - 1]) {
+            /* 
+             *  Is the tile before the same? Due to recursion, this should be fine
+             *  Not true, PF-06 [10,19] -> [14,16] introduces an extra tile in the middle of the route, so added a check for length equality
+             *  This still may fail in some niche situations, but it's probably fine
+             */
+            if ((direct_route[direct_route.length - 2].tile_id === path_to_fly[current_index_on_path + step - 1]) && (direct_route.length === step + 1)) {
                 index_to_fly_to = step;
             } else {
                 break;
