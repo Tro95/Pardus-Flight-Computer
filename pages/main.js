@@ -684,7 +684,14 @@ class NavArea {
     }
 
     fly() {
-        const path = PardusOptionsUtility.getVariableValue('autopilot_route', []).split(',');
+        const tile_string = PardusOptionsUtility.getVariableValue(`tiles_to_highlight`, '');
+        const path = [];
+
+        // Initialise the tile set
+        for (const tile_str of tile_string.split(',')) {
+            path.push(tile_str.split('|')[0]);
+        }
+
         const forward_direction = PardusOptionsUtility.getVariableValue('autopilot_forward', true);
         const max_steps = PardusOptionsUtility.getVariableValue('autopilot_max_steps', 10);
 

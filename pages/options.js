@@ -17,9 +17,9 @@ class OptionsPage {
             label: 'Recording',
         });
 
-        this.autopilot_subtab = this.pardus_flight_computer_tab.addSubTab({
-            label: 'Autopilot',
-        });
+        // this.autopilot_subtab = this.pardus_flight_computer_tab.addSubTab({
+        //     label: 'Autopilot',
+        // });
 
         this.squads_subtab = this.pardus_flight_computer_tab.addSubTab({
             label: 'Squads',
@@ -37,7 +37,7 @@ class OptionsPage {
         this.routeHighlightingOptions(this.pardus_flight_computer_tab);
         this.pathHighlightingOptions(this.path_highlighting_subtab);
         this.recordingOptions(this.recording_subtab);
-        this.autopilotOptions(this.autopilot_subtab);
+        //this.autopilotOptions(this.autopilot_subtab);
         this.squadsOptions(this.squads_subtab);
 
         this.pardus_flight_computer_tab.refreshElement();
@@ -173,7 +173,42 @@ class OptionsPage {
             rows: 3
         });
 
-        const mapper_box = subtab.addBox({
+        const autopilot_options = subtab.addBoxLeft({
+            heading: 'Autopilot Options',
+            description: 'These are the general options for autopilot.'
+        });
+
+        autopilot_options.addBooleanOption({
+            variable: 'enable_autopilot',
+            description: 'Enable autopilot',
+            defaultValue: true
+        });
+
+        autopilot_options.addBooleanOption({
+            variable: 'autopilot_forward',
+            description: 'Forward direction',
+            defaultValue: true
+        });
+
+        autopilot_options.addNumericOption({
+            variable: 'autopilot_max_steps',
+            description: 'Maximum steps',
+            defaultValue: 10,
+            min: 1,
+            max: 10,
+        });
+
+        autopilot_options.addKeyDownOption({
+            variable: 'move_along_path_key',
+            description: 'Fly to the next tile',
+            defaultValue: {
+                code: 70,
+                key: "KeyF",
+                description: "f"
+            }
+        });
+
+        const mapper_box = subtab.addBoxBottom({
             heading: 'Mapper',
             description: 'The links below let you view the currently-stored route.'
         });
@@ -181,6 +216,11 @@ class OptionsPage {
         mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
 
         tile_highlight_box.addEventListener('save', () => {
+            mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
+            mapper_box.refreshElement();
+        });
+
+        tile_highlight_box.addEventListener('preset-load', () => {
             mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
             mapper_box.refreshElement();
         });
