@@ -692,6 +692,11 @@ class NavArea {
             path.push(tile_str.split('|')[0]);
         }
 
+        if (path.length === 0) {
+            MsgFramePage.sendMessage('No autopilot path programmed', 'error');
+            return;
+        }        
+
         const forward_direction = PardusOptionsUtility.getVariableValue('autopilot_forward', true);
         const max_steps = PardusOptionsUtility.getVariableValue('autopilot_max_steps', 10);
 
