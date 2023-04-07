@@ -10,6 +10,7 @@ class Tile {
         this.path_highlighted = false;
         this.virtual_tile = virtual_tile;
         this.type = 'regular';
+        this.objectType = '';
 
         if (this.isVirtualTile()) {
             this.tile_id = tile_id.toString();
@@ -20,6 +21,14 @@ class Tile {
 
             if (unhighlight_regex.test(this.background_image)) {
                 this.background_image = this.background_image.match(unhighlight_regex)[1];
+            }
+
+            if (this.element.classList.contains('navNpc')) {
+                this.objectType = 'npc';
+            }
+
+            if (this.element.classList.contains('navBuilding')) {
+                this.objectType = 'building';
             }
 
             // Get the tile id
@@ -69,6 +78,10 @@ class Tile {
 
     isYHole() {
         return this.type === 'y-hole';
+    }
+
+    hasNpc() {
+        return this.objectType === 'npc';
     }
 
     setId(id) {
@@ -696,12 +709,8 @@ class NavArea {
             return;
         }
 
-        // By default, move one tile along the path
-        let index_to_fly_to = 1;
-
-        if (this.centre_tile.isWormhole() || this.centre_tile.isXHole() || this.centre_tile.isYHole()) {
-            index_to_fly_to = 0;
-        }
+        // By default, do not move
+        let index_to_fly_to = 0;
 
         // Now try to see if we can move further along the path in a single click
         for (let step = 1; step <= max_steps; step++) {
@@ -716,8 +725,15 @@ class NavArea {
                 break;
             }
 
+            // If the tile has an NPC, we want to stop on the tile before it
+            if (target_tile.hasNpc()) {
+                MsgFramePage.sendMessage('NPC is in the way, please fly around', 'error');
+                break;
+            }
+
             const direct_route = this.getPathTo(target_tile);
 
+            // Can we even get to the target tile?
             if (direct_route.length <= 1) {
                 index_to_fly_to = 0;
                 break;
