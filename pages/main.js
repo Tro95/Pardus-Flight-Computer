@@ -764,12 +764,14 @@ class NavArea {
         }
 
         if (index_to_fly_to > 0) {
-            this._nav(path_to_fly[current_index_on_path + index_to_fly_to]);
+            return this._nav(path_to_fly[current_index_on_path + index_to_fly_to]);
         } else if (this.centre_tile.isWormhole()) {
-            this._warp(path_to_fly[current_index_on_path]);  
+            return this._warp(path_to_fly[current_index_on_path]);
         } else if (this.centre_tile.isXHole() || this.centre_tile.isYHole()) {
-            this._xhole(path_to_fly[current_index_on_path + 1]);
+            return this._xhole(path_to_fly[current_index_on_path + 1]);
         }
+
+        MsgFramePage.sendMessage('Unable to fly to next tile', 'error');
     }
 
     _nav(tile_id) {
@@ -857,6 +859,18 @@ class MainPage {
 
         document.addPardusKeyDownListener('move_along_path_key', {code: 70}, () => {
             this.nav_area.fly();
+        });
+
+        document.addPardusKeyDownListener('toggle_autopilot_direction', {code: 67}, () => {
+            const forward = PardusOptionsUtility.getVariableValue('autopilot_forward', false);
+
+            if (forward) {
+                MsgFramePage.sendMessage('Autopilot heading backwards', 'info');
+            } else {
+                MsgFramePage.sendMessage('Autopilot heading forward', 'info');
+            }
+
+            PardusOptionsUtility.setVariableValue('autopilot_forward', !forward);
         });
     }
 
