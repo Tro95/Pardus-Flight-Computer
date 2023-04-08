@@ -17,10 +17,6 @@ class OptionsPage {
             label: 'Recording',
         });
 
-        // this.autopilot_subtab = this.pardus_flight_computer_tab.addSubTab({
-        //     label: 'Autopilot',
-        // });
-
         this.squads_subtab = this.pardus_flight_computer_tab.addSubTab({
             label: 'Squads',
         });
@@ -37,71 +33,9 @@ class OptionsPage {
         this.routeHighlightingOptions(this.pardus_flight_computer_tab);
         this.pathHighlightingOptions(this.path_highlighting_subtab);
         this.recordingOptions(this.recording_subtab);
-        //this.autopilotOptions(this.autopilot_subtab);
         this.squadsOptions(this.squads_subtab);
 
         this.pardus_flight_computer_tab.refreshElement();
-    }
-
-    autopilotOptions(subtab) {
-        subtab.addBoxTop({
-            heading: 'Autopilot',
-            description: 'Allows you to automatically fly along a pre-programmed route'
-        });
-
-        const autopilot_general_options = subtab.addBox({
-            heading: 'General Options',
-            description: 'These are the general options for autopilot.'
-        });
-
-        autopilot_general_options.addBooleanOption({
-            variable: 'enable_autopilot',
-            description: 'Enable autopilot',
-            defaultValue: true
-        });
-
-        autopilot_general_options.addBooleanOption({
-            variable: 'autopilot_forward',
-            description: 'Forward direction',
-            defaultValue: true
-        });
-
-        autopilot_general_options.addNumericOption({
-            variable: 'autopilot_max_steps',
-            description: 'Maximum steps',
-            defaultValue: 10,
-            min: 1,
-            max: 10,
-        });
-
-        const autopilot_path_box = subtab.addBox({
-            heading: 'Autopilot Tiles',
-            description: 'This is the list of tiles forming the route to fly along.',
-            resetButton: true,
-            presets: 4
-        });
-
-        autopilot_path_box.addTextAreaOption({
-            variable: 'autopilot_route',
-            defaultValue: '',
-            cols: 64,
-            rows: 3
-        });
-
-        const keyboard_options = subtab.addBox({
-            heading: 'Keyboard Options',
-            description: 'Set the keys for autopilot.'
-        });
-
-        keyboard_options.addKeyDownOption({
-            variable: 'move_along_path_key',
-            description: 'Fly to the next tile',
-            defaultValue: {
-                code: 70,
-                key: "KeyF",
-                description: "f"
-            }
-        });
     }
 
     pathHighlightingOptions(subtab) {
@@ -205,6 +139,16 @@ class OptionsPage {
                 code: 70,
                 key: "KeyF",
                 description: "f"
+            }
+        });
+
+        autopilot_options.addKeyDownOption({
+            variable: 'toggle_autopilot_direction',
+            description: 'Change direction',
+            defaultValue: {
+                code: 67,
+                key: "KeyC",
+                description: "c"
             }
         });
 
