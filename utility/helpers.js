@@ -1,3 +1,5 @@
+/* global get_sector_coords_obj */
+
 function mapper_urls_from_route(route = []) {
     const sector_routes = {};
 
@@ -15,7 +17,6 @@ function mapper_urls_from_route(route = []) {
 
         sector_routes[tile_obj.sector].push(`${tile_obj.x},${tile_obj.y}`);
     }
-
 
     const mapper_urls = {};
 
