@@ -6,7 +6,6 @@ class MsgFramePage {
 
         if (window.parent) {
             window.parent.window.addEventListener('pardus-message', (event) => {
-                console.log('Received pardus message!');
                 this.addMessage(event.detail.msg, event.detail.type);
             });
         }
