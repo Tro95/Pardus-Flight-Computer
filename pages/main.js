@@ -437,7 +437,12 @@ class NavArea {
         yield* this.yieldPathBetween(from_tile, this.centre_tile, ignore_navigatable);
     }
 
-    reload() {
+    refreshTilesToHighlight(tiles_to_highlight) {
+        this.tiles_to_highlight = tiles_to_highlight;
+        this.reload(true);
+    }
+
+    reload(clear = false) {
         this.nav_element = document.getElementById('navareatransition');
 
         if (!this.nav_element || this.nav_element.style.display === "none") {
@@ -497,7 +502,7 @@ class NavArea {
             }
         }
 
-        this._highlightTiles();
+        this._highlightTiles(clear);
 
         if (!this.isSquad) {
             this._addRecording();
@@ -611,7 +616,7 @@ class NavArea {
         }
     }
 
-    _highlightTiles() {
+    _highlightTiles(clear = false) {
 
         const highlight_tiles = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}highlight_tiles`, true);
 
@@ -632,6 +637,8 @@ class NavArea {
                 tile.highlight(this.tiles_to_highlight.get(tile.tile_id));
             } else if (!this.isSquad && colour_recorded_tiles && recorded_tiles.has(tile.tile_id)) {
                 tile.highlight(recorded_tile_colour);
+            } else {
+                tile._clearAllHighlighting();
             }
         }
     }
@@ -823,6 +830,404 @@ class NavArea {
     }
 }
 
+class NavigationOptions {
+    constructor() {
+        this.id = 'pardus-flight-computer-navigation-calculator-configuration';
+        this.configuration = PardusOptionsUtility.getVariableValue('navigation-configuration', {});
+        this._initDriveMap();
+    }
+
+    saveConfiguration() {
+        PardusOptionsUtility.setVariableValue('navigation-configuration', this.configuration);
+    }
+
+    getOptions() {
+        const options = {
+            drive_speed: 1,
+            navigation_level: 0,
+            amber_stim: false,
+            pathfinder: null,
+            wormhole_cost: 10,
+            x_hole_cost: 1000,
+            exocrab: false,
+            boost_active: false,
+            gas_flux_capacitor: null,
+            energy_flux_capacitor: null,
+            wormhole_seals: {
+                enif: true,
+                nhandu: true,
+                procyon: true,
+                quaack: true,
+            }
+        };
+
+        if ('drive' in this.configuration) {
+            options.drive_speed = this.configuration.drive.speed;
+        }
+
+        if ('navigation_level' in this.configuration) {
+            options.navigation_level = this.configuration.navigation_level;
+        }
+
+        if ('gyro' in this.configuration) {
+            options.wormhole_cost = this.configuration.gyro.wormhole_cost
+        }
+
+        if ('gas_flux_capacitor' in this.configuration) {
+            options.gas_flux_capacitor = this.configuration.gas_flux_capacitor.strength
+        }
+
+        if ('energy_flux_capacitor' in this.configuration) {
+            options.energy_flux_capacitor = this.configuration.energy_flux_capacitor.strength
+        }
+
+        /**
+         *  Credit to Asdwolf for the logic from his script 
+         */
+        const epoch = 1449120361000 //December 3, 2015 05:26:01 GMT
+        const days = (Date.now() - epoch)/1000/60/60/24;
+        const wormhole_cycle = ['procyon', 'nhandu', 'enif', 'quaack'];
+
+        switch (PardusOptionsUtility.getUniverse()) {
+            case 'artemis':
+            case 'orion':
+                options.wormhole_seals[wormhole_cycle[Math.floor(days / 2) % 4]] = false;
+                break;
+            case 'pegasus':
+                options.wormhole_seals[wormhole_cycle[Math.floor((days + 3) / 2) % 4]] = false;
+        }
+
+        return options;        
+    }
+
+    refreshOptions() {
+        return Promise.all([
+            this._refreshShipEquipment(),
+            this._refreshAdvancedSkills(),
+        ]).then(() => {
+            this.saveConfiguration();
+        }).then(() => {
+            this.reloadHtml();
+        });
+    }
+
+    _refreshAdvancedSkills() {
+        return this._fetchPardusPage('overview_advanced_skills.php').then((dom) => {
+            const tables = dom.querySelectorAll('.messagestyle');
+            const lastTable = tables[tables.length - 1];
+            const lastRow = lastTable.rows[lastTable.rows.length - 1];
+            const navigationLevel = Number(lastRow.cells[2].innerText.split(' ')[1].split('/')[0]);
+            this.configuration.navigation_level = navigationLevel;
+        });
+    }
+
+    _refreshShipEquipment() {
+        return this._fetchPardusPage('overview_ship.php').then((dom) => {
+            const tables = dom.querySelectorAll('.messagestyle');
+            const driveTd = tables[0].querySelector(' tr:nth-of-type(21) td:nth-of-type(2)');
+            const driveImage = driveTd.children[0].src.split('/')[driveTd.children[0].src.split('/').length - 1];
+            this.configuration.drive = this.driveMap.get(driveImage);
+
+            const specialEquipmentImages = tables[1].querySelectorAll('img');
+
+            delete this.configuration.gyro;
+            delete this.configuration.gas_flux_capacitor;
+            delete this.configuration.energy_flux_capacitor;
+
+            for (const equipmentImage of specialEquipmentImages) {
+                const imageName = equipmentImage.src.split('/')[equipmentImage.src.split('/').length - 1];
+
+                switch (imageName) {
+                    case 'gyro_stabilizer_1.png':
+                        this.configuration.gyro = {
+                            name: 'I',
+                            image: 'gyro_stabilizer_1.png',
+                            wormhole_cost: 6,
+                        };
+                        break;
+                    case 'gyro_stabilizer_2.png':
+                        this.configuration.gyro = {
+                            name: 'II',
+                            image: 'gyro_stabilizer_2.png',
+                            wormhole_cost: 1,
+                        };
+                        break;
+                    case 'flux_capacitor_gas.png':
+                        this.configuration.gas_flux_capacitor = {
+                            name: 'Weak',
+                            image: 'flux_capacitor_gas.png',
+                            strength: 'weak',                            
+                        }
+                        break;
+                    case 'flux_capacitor_gas_strong.png':
+                        this.configuration.gas_flux_capacitor = {
+                            name: 'Strong',
+                            image: 'flux_capacitor_gas_strong.png',
+                            strength: 'strong',                            
+                        }
+                        break;
+                    case 'flux_capacitor_energy.png':
+                        this.configuration.energy_flux_capacitor = {
+                            name: 'Weak',
+                            image: 'flux_capacitor_energy.png',
+                            strength: 'weak',                            
+                        }
+                        break;
+                    case 'flux_capacitor_energy_strong.png':
+                        this.configuration.energy_flux_capacitor = {
+                            name: 'Strong',
+                            image: 'flux_capacitor_energy_strong.png',
+                            strength: 'strong',                            
+                        }
+                        break;
+                }
+            }
+        });
+    }
+
+    _initDriveMap() {
+        this.driveMap = new Map();
+
+        this.driveMap.set('drive_nuclear.png', {
+            name: 'Nuclear',
+            image: 'drive_nuclear.png',
+            speed: 1,
+        });
+
+        this.driveMap.set('drive_fusion.png', {
+            name: 'Fusion',
+            image: 'drive_fusion.png',
+            speed: 2,
+        });
+
+        this.driveMap.set('drive_fusion_enhanced.png', {
+            name: 'Enhanced Fusion',
+            image: 'drive_fusion_enhanced.png',
+            speed: 2,
+        });
+
+        this.driveMap.set('drive_ion.png', {
+            name: 'Ion',
+            image: 'drive_ion.png',
+            speed: 3,
+        });
+
+        this.driveMap.set('drive_ion_z.png', {
+            name: 'Z Series Ion',
+            image: 'drive_ion_z.png',
+            speed: 3,
+        });
+
+        this.driveMap.set('drive_antimatter.png', {
+            name: 'Anti-Matter',
+            image: 'drive_antimatter.png',
+            speed: 4,
+        });
+
+        this.driveMap.set('drive_antimatter_enhanced.png', {
+            name: 'Enhanced Anti-Matter',
+            image: 'drive_antimatter_enhanced.png',
+            speed: 4,
+        });
+
+        this.driveMap.set('drive_hyper.png', {
+            name: 'Hyper',
+            image: 'drive_hyper.png',
+            speed: 5,
+        });
+
+        this.driveMap.set('drive_hyper_z.png', {
+            name: 'Z Series Hyper',
+            image: 'drive_hyper_z.png',
+            speed: 5,
+        });
+
+        this.driveMap.set('drive_interphased.png', {
+            name: 'Interphased',
+            image: 'drive_interphased.png',
+            speed: 6,
+        });
+
+        this.driveMap.set('drive_interphased_enhanced.png', {
+            name: 'Enhanced Interphased',
+            image: 'drive_interphased_enhanced.png',
+            speed: 6,
+        });
+
+        this.driveMap.set('fer_drive_1.png', {
+            name: 'Feral Spin Apparatus',
+            image: 'fer_drive_1.png',
+            speed: 6,
+        });
+    }
+
+    reloadHtml() {
+        document.getElementById(this.id).innerHTML = this.getInnerHtml();
+        this.addRefreshListener();
+    }
+
+    _fetchPardusPage(page) {
+        return fetch(page).then((response) => {
+            if (!response.ok) {
+                throw Error(response.statusText);
+            }
+
+            return response.text();
+        }).then((html) => {
+            const parser = new DOMParser();
+            return parser.parseFromString(html, 'text/html');
+        });
+    }
+
+    getInnerHtml() {
+        const driveHtml = 'drive' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.drive.image}' width='32' height='10'/> ${this.configuration.drive.name}` : 'None';
+        const navigationHtml = 'navigation_level' in this.configuration ? `Level ${this.configuration.navigation_level}/3` : 'Level 0/3';
+        const gyroHtml = 'gyro' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.gyro.image}' width='32' height='10'/> ${this.configuration.gyro.name}` : 'None';
+        const gasFluxCapacitorHtml = 'gas_flux_capacitor' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.gas_flux_capacitor.image}' width='32' height='10'/> ${this.configuration.gas_flux_capacitor.name}` : 'None';
+        const energyFluxCapacitorHtml = 'energy_flux_capacitor' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.energy_flux_capacitor.image}' width='32' height='10'/> ${this.configuration.energy_flux_capacitor.name}` : 'None';
+
+        return `<tbody><tr><td>Drive: </td><td id='navigation-options-drive'>${driveHtml}</td></tr><tr><td>Navigation skill: </td><td id='navigation-options-skill'>${navigationHtml}</td></tr><tr><td>Gyro Stabilizer: </td><td id='navigation-options-gyro'>${gyroHtml}</td></tr><tr><td>Gas Flux Capacitor: </td><td id='navigation-options-gas'>${gasFluxCapacitorHtml}</td></tr><tr><td>Energy Flux Capacitor: </td><td id='navigation-options-energy'>${energyFluxCapacitorHtml}</td></tr><tr><td colspan='2' align='center'><input id='refresh-navigation-options' type='submit' value='Refresh'/></td></tr></tbody>`;
+    }
+
+    addRefreshListener() {
+        const button = document.getElementById('refresh-navigation-options');
+        button.addEventListener('click', () => {
+            button.setAttribute('disabled', 'true');
+            button.value = 'Refreshing...';
+            button.setAttribute('style', 'text-align: center; color: green; background-color: silver');
+            this.refreshOptions().finally(() => {
+                button.removeAttribute('disabled');
+                button.value = 'Plot route';
+                button.setAttribute('style', 'text-align: center;'); 
+            });
+        });
+    }
+
+    getHtml() {
+        return `<table id='${this.id}' style='width: 100%;'>${this.getInnerHtml()}</table>`;
+    }
+}
+
+class NavigationCalculatorPopup {
+    constructor() {
+        this.id = 'pardus-flight-computer-navigation-calculator-popup';
+        this.navigationOptions = new NavigationOptions();
+        console.log(this.navigationOptions);
+
+        if (document.getElementById(this.id)) {
+            this.element = document.getElementById(this.id);
+        } else {
+            this._create();
+        }
+    }
+
+    isVisible() {
+        return !this.element.style.display;
+    }
+
+    show() {
+        this.element.style.display = '';
+        document.getElementById('select-sector').focus();
+    }
+
+    hide() {
+        this.element.style.display = 'none';
+        document.getElementById('select-sector').blur();
+    }
+
+    _getSectorSelectHtml(id) {
+        let html = `<select id='select-${id}'><option value='' disabled selected>-- Target Sector --</option>`;
+
+        for (const sector of getSectors()) {
+            html += `<option value="${sector}">${sector}</option>`;
+        }
+
+        html += '</select>';
+
+        return html;
+    }
+
+    /**
+     * Prevents keypresses from interacting with other parts of this script or other scripts 
+     */
+    _addKeyDownListener() {
+        this.element.addEventListener('keydown', (event) => {
+            event.stopPropagation();
+        });
+    }
+
+    getRouteFrom(startTileId) {
+        const targetSector = document.getElementById('select-sector').value;
+        const targetX = Number(document.getElementById('target-x').value);
+        const targetY = Number(document.getElementById('target-y').value);
+
+        const targetTileId = getTileIdFromSectorAndCoords(targetSector, targetX, targetY);
+
+        return this._getRouteTo([startTileId, targetTileId]);
+    }
+
+    _getRouteTo(waypoints = []) {
+        const initial_url = 'https://tro.xcom-alliance.info/get-backend-url.php';
+
+        const options = this.navigationOptions.getOptions();
+
+        return fetch(initial_url).then((response) => {
+            if (!response.ok) {
+                throw Error(response.statusText);
+            }
+
+            return response.json();
+        }).then((json) => {
+            return json.url;
+        }).then((url) => {
+            return fetch(`${url}/route?`+ new URLSearchParams({
+                waypoints: waypoints.join(','),
+                options: encodeURIComponent(JSON.stringify(options))
+            }));
+        }).then((response) => {
+            if (!response.ok) {
+                throw Error(response.statusText);
+            }
+
+            return response.json();
+        }).then((json) => {
+            return json.path;
+        });
+    }
+
+    _create() {
+        this.element = document.createElement('div');
+        this.element.id = this.id;
+        Object.assign(this.element.style, {
+            backgroundColor: '#00002C',
+            border: '2px outset #335',
+            borderRadius: '8px',
+            left: '50%',
+            top: '35%',
+            width: 500 + 'px',
+            marginLeft: -500 / 2 + 'px',
+            marginTop: -175 / 2 + 'px',
+            position: 'fixed',
+            zIndex: 9,
+            display: 'none',
+        });
+
+        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr><td style='text-align: center;'><label for='sector'>Sector: </label>${this._getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;'></td><td id='navigation-ship-equipment' style='width: 50%;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
+
+        document.body.appendChild(this.element);
+        document.getElementById('close-navigation-calculator-popup').addEventListener('click', () => {
+            this.hide();
+        });
+
+        this._addKeyDownListener();
+        this.navigationOptions.addRefreshListener();
+    }
+
+    getCalculateButtonElement() {
+        return document.getElementById('navigate-to-destination');
+    }
+}
+
 class MainPage {
 
     constructor(options = {
@@ -844,11 +1249,12 @@ class MainPage {
             }
         }
 
-        this.nav_area = new NavArea(this.tile_set, options);
+        this.navArea = new NavArea(this.tile_set, options);
         this._addAutopilot();
+        this._addNavigationCalculatorPopup();
 
-        this.handle_partial_refresh(() => {
-            this.nav_area.reload();
+        this._handlePartialRefresh(() => {
+            this.navArea.reload();
         });
     }
 
@@ -858,7 +1264,7 @@ class MainPage {
         }
 
         document.addPardusKeyDownListener('move_along_path_key', {code: 70}, () => {
-            this.nav_area.fly();
+            this.navArea.fly();
         });
 
         document.addPardusKeyDownListener('toggle_autopilot_direction', {code: 67}, () => {
@@ -874,13 +1280,64 @@ class MainPage {
         });
     }
 
-    handle_partial_refresh(func) {
-        const main_element = document.getElementById('tdSpaceChart');
+    // Credit to Victoria Axworthy (Orion), and Math (Orion)
+    _addNavigationCalculatorPopup() {
+        this.navigationCalculatorPopup = new NavigationCalculatorPopup();
 
-        const nav_element = main_element ? document.getElementById('tdSpaceChart').getElementsByTagName('table')[0] : document.querySelectorAll('table td[valign="top"]')[1];
+        document.addPardusKeyDownListener('open_navigation_key', {code: 68}, (event) => {
+            if (!this.navigationCalculatorPopup.isVisible()) {
+                this.navigationCalculatorPopup.show();
+                event.preventDefault();
+            }
+        });
+
+        document.addPardusKeyDownListener('close_navigation_key', {code: 27}, () => {
+            if (this.navigationCalculatorPopup.isVisible()) {
+                this.navigationCalculatorPopup.hide();
+                event.preventDefault();
+            }
+        });
+
+        this.navigationCalculatorPopup.element.addPardusKeyDownListener('close_navigation_key', {code: 27}, () => {
+            if (this.navigationCalculatorPopup.isVisible()) {
+                this.navigationCalculatorPopup.hide();
+                event.preventDefault();
+            }
+        });
+
+        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', () => {
+            this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('disabled', 'true');
+            this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plotting...';
+            this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center; color: green; background-color: silver');
+            this.navigationCalculatorPopup.getRouteFrom(this.navArea.centre_tile.tile_id).then((route) => {
+                PardusOptionsUtility.setVariableValue('tiles_to_highlight', route.join(','));
+                this.navigationCalculatorPopup.hide();
+                MsgFramePage.sendMessage('Plotted route to destination', 'info');
+
+                this.tile_set = new Map();
+
+                // Initialise the tile set
+                for (const tile_str of route) {
+                    this.tile_set.set(tile_str.toString(), this.default_colour);
+                }
+
+                this.navArea.refreshTilesToHighlight(this.tile_set);
+            }).catch((error) => {
+                MsgFramePage.sendMessage('Unable to get route to destination', 'error');
+            }).finally(() => {
+                this.navigationCalculatorPopup.getCalculateButtonElement().removeAttribute('disabled');
+                this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plot route';
+                this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center;');                
+            });
+        });
+    }
+
+    _handlePartialRefresh(func) {
+        const mainElement = document.getElementById('tdSpaceChart');
+        const navElement = mainElement ? document.getElementById('tdSpaceChart').getElementsByTagName('table')[0] : document.querySelectorAll('table td[valign="top"]')[1];
 
         // This would be more specific, but it doesn't trigger enough refreshes
-        //const nav_element = document.getElementById('nav').parentNode;
+        //const navElement = document.getElementById('nav').parentNode;
 
         // Options for the observer (which mutations to observe)
         const config = { attributes: false, childList: true, subtree: true };
@@ -894,6 +1351,6 @@ class MainPage {
         const observer = new MutationObserver(callback);
 
         // Start observing the target node for configured mutations
-        observer.observe(nav_element, config);
+        observer.observe(navElement, config);
     }
 }

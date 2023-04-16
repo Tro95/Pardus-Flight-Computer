@@ -17,6 +17,10 @@ class OptionsPage {
             label: 'Recording',
         });
 
+        this.route_calculator_subtab = this.pardus_flight_computer_tab.addSubTab({
+            label: 'Route Calculator',
+        });
+
         this.squads_subtab = this.pardus_flight_computer_tab.addSubTab({
             label: 'Squads',
         });
@@ -33,6 +37,7 @@ class OptionsPage {
         this.routeHighlightingOptions(this.pardus_flight_computer_tab);
         this.pathHighlightingOptions(this.path_highlighting_subtab);
         this.recordingOptions(this.recording_subtab);
+        this.routeCalculatorOptions(this.route_calculator_subtab);
         this.squadsOptions(this.squads_subtab);
 
         this.pardus_flight_computer_tab.refreshElement();
@@ -78,7 +83,11 @@ class OptionsPage {
         route_highlighting_general_options.addBooleanOption({
             variable: 'highlight_tiles',
             description: 'Enable route highlighting',
-            defaultValue: true
+            defaultValue: true,
+            info: {
+                title: 'Route Highlighting',
+                description: 'Enabling route highlighting will show the route on the nav screen corresponding to the route in the route tiles box. This option does not enable or disable the autopilot functionality.',
+            },
         });
 
         route_highlighting_general_options.addSelectOption({
@@ -95,7 +104,7 @@ class OptionsPage {
 
         const tile_highlight_box = subtab.addBox({
             heading: 'Route Tiles',
-            description: 'This is the list of tiles forming the route to highlight.',
+            description: 'This is the list of tiles forming the route to highlight. If you are using autopilot, please ensure the tiles create a continuous path, and are ordered sequentially from one end to the other.',
             resetButton: true,
             presets: 4
         });
@@ -109,27 +118,39 @@ class OptionsPage {
 
         const autopilot_options = subtab.addBoxLeft({
             heading: 'Autopilot Options',
-            description: 'These are the general options for autopilot.'
+            description: 'These are the general options for autopilot. Autopilot will attempt to fly along the route configured in the route tiles box, ensuring that it only travels over tiles contained in the route. If the route configured is not continuous, autopilot will fly to the end of the current continuous section and stop. Autopilot will only work when you are somewhere along the route; one tile off and autopilot will not move.',
         });
 
         autopilot_options.addBooleanOption({
             variable: 'enable_autopilot',
             description: 'Enable autopilot',
-            defaultValue: true
+            defaultValue: true,
+            info: {
+                title: 'Autopilot',
+                description: 'Enabling autopilot will allow you to fly along the route configured in the route tiles box using the key configured for flying. It is recommended to enable route highlighting with the autopilot, so you can visually see the route the autopilot will fly. This option does not enable or disable the route highlighting functionality.',
+            },
         });
 
         autopilot_options.addBooleanOption({
             variable: 'autopilot_forward',
             description: 'Forward direction',
-            defaultValue: true
+            defaultValue: true,
+            info: {
+                title: 'Autopilot Direction',
+                description: 'This setting determines the direction autopilot will fly in for the configured route in the route tiles box. Forwards will fly from the first tile to the last tile in the route tiles box, and backwards will fly from the last to the first. This setting can be changed using the configured key to change direction.',
+            },
         });
 
         autopilot_options.addNumericOption({
             variable: 'autopilot_max_steps',
             description: 'Maximum steps',
-            defaultValue: 10,
+            defaultValue: 8,
             min: 1,
-            max: 10,
+            max: 8,
+            info: {
+                title: 'Autopilot Steps',
+                description: 'The maximum number of tiles autopilot will fly over every keypress. The maximum achievable is 8 tiles, allowing you to fly as far as you can see on your nav. The minimum is 1, and will allow you to fly one tile at a time.',
+            },
         });
 
         autopilot_options.addKeyDownOption({
@@ -139,7 +160,11 @@ class OptionsPage {
                 code: 70,
                 key: "KeyF",
                 description: "f"
-            }
+            },
+            info: {
+                title: 'Autopilot Fly Key',
+                description: 'Every press, autopilot will fly along the route configured. Disabling this option will prevent autopilot from working. It is recommended to check this key does not conflict with any other scripts.',
+            },
         });
 
         autopilot_options.addKeyDownOption({
@@ -149,7 +174,11 @@ class OptionsPage {
                 code: 67,
                 key: "KeyC",
                 description: "c"
-            }
+            },
+            info: {
+                title: 'Change Direction Key',
+                description: 'Changes the direction autopilot will fly in from the nav screen. Disabling this option will require you to come into this settings page and change the direction setting manually. It is recommended to check this key does not conflict with any other scripts.',
+            },
         });
 
         const mapper_box = subtab.addBoxBottom({
@@ -172,6 +201,32 @@ class OptionsPage {
         tile_highlight_box.addEventListener('reset', () => {
             mapper_box.innerHtml = OptionsPage.get_mapper_box_html();
             mapper_box.refreshElement();
+        });
+    }
+
+    routeCalculatorOptions(subtab) {
+        subtab.addBoxTop({
+            heading: 'Route Highlighting',
+            description: 'Route calculator will calculator an AP-efficient route from your current location to your target destination. Using the calculator will require the script accessing non-Pardus websites, which perform the calculations remotely. For more fine-grained control, please use <a href="https://tro.xcom-alliance.info/path_calculator.html" target="_blank">https://tro.xcom-alliance.info/path_calculator.html</a>.'
+        });
+
+        const route_calculator_general_options = subtab.addBox({
+            heading: 'General Options',
+            description: 'These are the general options for the route calculator.'
+        });
+
+        route_calculator_general_options.addKeyDownOption({
+            variable: 'open_navigation_key',
+            description: 'Open navigation box',
+            defaultValue: {
+                code: 68,
+                key: "KeyD",
+                description: "d"
+            },
+            info: {
+                title: 'Navigation Box',
+                description: 'Every press, autopilot will fly along the route configured. Disabling this option will prevent autopilot from working. It is recommended to check this key does not conflict with any other scripts.',
+            },
         });
     }
 
