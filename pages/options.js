@@ -225,7 +225,7 @@ class OptionsPage {
             },
             info: {
                 title: 'Navigation Box',
-                description: 'Every press, autopilot will fly along the route configured. Disabling this option will prevent autopilot from working. It is recommended to check this key does not conflict with any other scripts.',
+                description: 'This button opens the navigation box. It can be closed by pressing the escape key, or by clicking the cancel button. Disabling this option effectively disables the nagivation calculator.',
             },
         });
     }
