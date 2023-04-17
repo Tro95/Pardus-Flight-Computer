@@ -1,4 +1,4 @@
-/* global PardusOptionsUtility, MsgFramePage, colours, userloc, get_sector_coords_obj, nav, navAjax, warp, warpAjax, warpX */
+/* global PardusOptionsUtility, MsgFramePage, colours, userloc, get_sector_coords, get_sector_coords_obj, nav, navAjax, warp, warpAjax, warpX */
 
 class Tile {
     constructor(element, x, y, tile_id = null, virtual_tile = false) {
@@ -98,6 +98,10 @@ class Tile {
 
     toString() {
         return `Tile ${this.tile_id} [${this.x}, ${this.y}]`;
+    }
+
+    getHumanString() {
+        return get_sector_coords(this.id);
     }
 
     valueOf() {
@@ -737,7 +741,7 @@ class NavArea {
                 break;
             }
 
-            const target_tile = this.getTileOnNav(path_to_fly[current_index_on_path + step])
+            const target_tile = this.getTileOnNav(path_to_fly[current_index_on_path + step]);
 
             // If the tile is not on the nav screen
             if (!target_tile) {
@@ -754,7 +758,6 @@ class NavArea {
 
             // Can we even get to the target tile?
             if (direct_route.length <= 1) {
-                index_to_fly_to = 0;
                 break;
             }
 
@@ -778,7 +781,7 @@ class NavArea {
             return this._xhole(path_to_fly[current_index_on_path + 1]);
         }
 
-        MsgFramePage.sendMessage('Unable to fly to next tile', 'error');
+        MsgFramePage.sendMessage(`Unable to fly to ${get_sector_coords(path_to_fly[current_index_on_path + 1])}, please make sure the route is continuous.`, 'error');
     }
 
     _nav(tile_id) {
@@ -1112,7 +1115,6 @@ class NavigationCalculatorPopup {
     constructor() {
         this.id = 'pardus-flight-computer-navigation-calculator-popup';
         this.navigationOptions = new NavigationOptions();
-        console.log(this.navigationOptions);
 
         if (document.getElementById(this.id)) {
             this.element = document.getElementById(this.id);
