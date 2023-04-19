@@ -1331,7 +1331,6 @@ class NavigationCalculatorPopup {
         Object.assign(this.element.style, {
             backgroundColor: '#00002C',
             border: '2px outset #335',
-            borderRadius: '8px',
             left: '50%',
             top: '35%',
             width: 500 + 'px',
@@ -1342,7 +1341,7 @@ class NavigationCalculatorPopup {
             display: 'none',
         });
 
-        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr><td style='text-align: center;'><label for='sector'>Sector: </label>${this._getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;'>${this.navigationFavourites}</td><td id='navigation-ship-equipment' style='width: 50%;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
+        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr style='height: 50px;'><td style='text-align: center;'><label for='sector'>Sector: </label>${this._getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationFavourites}</td><td id='navigation-ship-equipment' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;padding-top:20px;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
 
         document.body.appendChild(this.element);
         document.getElementById('close-navigation-calculator-popup').addEventListener('click', () => {
