@@ -1208,7 +1208,7 @@ class NavigationFavourites {
     }
 
     setupFavourites() {
-        for (let i = 0; i < this.numberOfFavourites; i++) {
+        for (let i = 1; i <= this.numberOfFavourites; i++) {
             this.favourites.push(new NavigationFavourite(i));
         }
     }
