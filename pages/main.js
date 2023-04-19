@@ -1089,7 +1089,7 @@ class NavigationOptions {
         const gasFluxCapacitorHtml = 'gas_flux_capacitor' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.gas_flux_capacitor.image}' width='32' height='10'/> ${this.configuration.gas_flux_capacitor.name}` : 'None';
         const energyFluxCapacitorHtml = 'energy_flux_capacitor' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.energy_flux_capacitor.image}' width='32' height='10'/> ${this.configuration.energy_flux_capacitor.name}` : 'None';
 
-        return `<tbody><tr><td>Drive: </td><td id='navigation-options-drive'>${driveHtml}</td></tr><tr><td>Navigation skill: </td><td id='navigation-options-skill'>${navigationHtml}</td></tr><tr><td>Gyro Stabilizer: </td><td id='navigation-options-gyro'>${gyroHtml}</td></tr><tr><td>Gas Flux Capacitor: </td><td id='navigation-options-gas'>${gasFluxCapacitorHtml}</td></tr><tr><td>Energy Flux Capacitor: </td><td id='navigation-options-energy'>${energyFluxCapacitorHtml}</td></tr><tr><td colspan='2' align='center'><input id='refresh-navigation-options' type='submit' value='Refresh'/></td></tr></tbody>`;
+        return `<tbody><tr><td>Drive: </td><td id='navigation-options-drive'>${driveHtml}</td></tr><tr><td>Navigation skill: </td><td id='navigation-options-skill'>${navigationHtml}</td></tr><tr><td>Gyro Stabilizer: </td><td id='navigation-options-gyro'>${gyroHtml}</td></tr><tr><td>Gas Flux Capacitor: </td><td id='navigation-options-gas'>${gasFluxCapacitorHtml}</td></tr><tr><td>Energy Flux Capacitor: </td><td id='navigation-options-energy'>${energyFluxCapacitorHtml}</td></tr><tr><td colspan='2' align='center'><input id='refresh-navigation-options' type='submit' tabindex='-1' value='Refresh'/></td></tr></tbody>`;
     }
 
     addRefreshListener() {
@@ -1177,11 +1177,11 @@ class NavigationFavourite {
     }
 
     _saveButton() {
-        return `<input value="Save" id="${this.id}-save" type="button" style="color:#D0D1D9;background-color:#00001C;"/>`;
+        return `<input value="Save" id="${this.id}-save" tabindex='-1' type="button" style="color:#D0D1D9;background-color:#00001C;"/>`;
     }
 
     _loadButton() {
-        return `<input value="Load" id="${this.id}-load" type="button" style="color:#D0D1D9;background-color:#00001C;"/>`;
+        return `<input value="Load" id="${this.id}-load" tabindex='-1' type="button" style="color:#D0D1D9;background-color:#00001C;"/>`;
     };
 
     _input() {
@@ -1191,7 +1191,7 @@ class NavigationFavourite {
             valueOrPlaceholder = `value='${this.name}'`;
         }
 
-        return `<input id='${this.id}-name' type='text' ${valueOrPlaceholder} style='color:#D0D1D9; background-color:#00001C;width:120px;'></input>`;
+        return `<input id='${this.id}-name' type='text' tabindex='-1' ${valueOrPlaceholder} style='color:#D0D1D9; background-color:#00001C;width:120px;'></input>`;
     }
 
     toString() {
