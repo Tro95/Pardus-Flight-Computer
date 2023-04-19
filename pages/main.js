@@ -1106,8 +1106,135 @@ class NavigationOptions {
         });
     }
 
+    toString() {
+        return this.getHtml();
+    }
+
     getHtml() {
         return `<table id='${this.id}' style='width: 100%;'>${this.getInnerHtml()}</table>`;
+    }
+}
+
+class NavigationFavourite {
+    constructor(favouriteNumber) {
+        const prefix = 'navigation-favourite-';
+
+        this.number = favouriteNumber;
+        this.id = `${prefix}${favouriteNumber}`;
+
+        const existingValue = PardusOptionsUtility.getVariableValue(this.id);
+
+        if (existingValue) {
+            this.name = existingValue.name;
+            this.value = existingValue.value;
+        }
+    }
+
+    save() {
+        this.name = document.getElementById(`${this.id}-name`).value;
+        this.value = {
+            sector: document.getElementById('select-sector').value,
+            x: document.getElementById('target-x').value,
+            y: document.getElementById('target-y').value
+        };
+
+        PardusOptionsUtility.setVariableValue(this.id, {
+            name: this.name,
+            value: this.value
+        });
+    }
+
+    load() {
+        document.getElementById('select-sector').value = this.value.sector;
+        document.getElementById('target-x').value = this.value.x;
+        document.getElementById('target-y').value = this.value.y;
+    }
+
+    addEventListeners() {
+        document.getElementById(`${this.id}-save`).addEventListener('click', () => {
+            this.save();
+            document.getElementById(`${this.id}-save`).setAttribute('disabled', 'true');
+            document.getElementById(`${this.id}-save`).value = 'Saved';
+            document.getElementById(`${this.id}-save`).setAttribute('style', 'color:green;background-color:silver');
+            setTimeout(() => {
+                document.getElementById(`${this.id}-save`).removeAttribute('disabled');
+                document.getElementById(`${this.id}-save`).value = 'Save';
+                document.getElementById(`${this.id}-save`).setAttribute('style', 'color:#D0D1D9;background-color:#00001C;');
+            }, 2000);
+        });
+
+        document.getElementById(`${this.id}-load`).addEventListener('click', () => {
+            this.load();
+            document.getElementById(`${this.id}-load`).setAttribute('disabled', 'true');
+            document.getElementById(`${this.id}-load`).value = 'Loaded';
+            document.getElementById(`${this.id}-load`).setAttribute('style', 'color:green;background-color:silver');
+            setTimeout(() => {
+                document.getElementById(`${this.id}-load`).removeAttribute('disabled');
+                document.getElementById(`${this.id}-load`).value = 'Load';
+                document.getElementById(`${this.id}-load`).setAttribute('style', 'color:#D0D1D9;background-color:#00001C;');
+            }, 2000);
+        });
+    }
+
+    _saveButton() {
+        return `<input value="Save" id="${this.id}-save" type="button" style="color:#D0D1D9;background-color:#00001C;"/>`;
+    }
+
+    _loadButton() {
+        return `<input value="Load" id="${this.id}-load" type="button" style="color:#D0D1D9;background-color:#00001C;"/>`;
+    };
+
+    _input() {
+        let valueOrPlaceholder = `placeholder='Favourite ${this.number}'`;
+
+        if ('value' in this) {
+            valueOrPlaceholder = `value='${this.name}'`;
+        }
+
+        return `<input id='${this.id}-name' type='text' ${valueOrPlaceholder} style='color:#D0D1D9; background-color:#00001C;width:120px;'></input>`;
+    }
+
+    toString() {
+        return `<tr><td align='left'>${this._input()}</td><td align='right'>${this._loadButton()} ${this._saveButton()}</td></tr>`
+    }
+}
+
+class NavigationFavourites {
+    constructor() {
+        this.id = 'pardus-flight-computer-navigation-calculator-favourites';
+        this.numberOfFavourites = 4;
+        this.favourites = [];
+        this.setupFavourites();
+    }
+
+    setupFavourites() {
+        for (let i = 0; i < this.numberOfFavourites; i++) {
+            this.favourites.push(new NavigationFavourite(i));
+        }
+    }
+
+    addEventListeners() {
+        for (const favourite of this.favourites) {
+            favourite.addEventListeners();
+        }
+    }
+
+    toString() {
+        return this.getHtml();
+    }
+
+    getInnerHtml() {
+        let html = '';
+
+        for (const favourite of this.favourites) {
+            html += favourite;
+        }
+
+        return html;
+    }
+
+    getHtml() {
+        return `<table id='${this.id}' style='width: 100%;'><tbody>${this.getInnerHtml()}</tbody></table>`;
     }
 }
 
@@ -1115,6 +1242,7 @@ class NavigationCalculatorPopup {
     constructor() {
         this.id = 'pardus-flight-computer-navigation-calculator-popup';
         this.navigationOptions = new NavigationOptions();
+        this.navigationFavourites = new NavigationFavourites();
 
         if (document.getElementById(this.id)) {
             this.element = document.getElementById(this.id);
@@ -1214,7 +1342,7 @@ class NavigationCalculatorPopup {
             display: 'none',
         });
 
-        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr><td style='text-align: center;'><label for='sector'>Sector: </label>${this._getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;'></td><td id='navigation-ship-equipment' style='width: 50%;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
+        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr><td style='text-align: center;'><label for='sector'>Sector: </label>${this._getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;'>${this.navigationFavourites}</td><td id='navigation-ship-equipment' style='width: 50%;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
 
         document.body.appendChild(this.element);
         document.getElementById('close-navigation-calculator-popup').addEventListener('click', () => {
@@ -1223,6 +1351,7 @@ class NavigationCalculatorPopup {
 
         this._addKeyDownListener();
         this.navigationOptions.addRefreshListener();
+        this.navigationFavourites.addEventListeners();
     }
 
     getCalculateButtonElement() {
