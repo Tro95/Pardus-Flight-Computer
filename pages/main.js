@@ -1340,14 +1340,8 @@ class MainPage {
             }
         });
 
-        this.navigationCalculatorPopup.element.addPardusKeyDownListener('plot_key', {code: 13}, () => {
-            if (this.navigationCalculatorPopup.isVisible()) {
-                this.navigationCalculatorPopup.hide();
-                event.preventDefault();
-            }
-        });
-
-        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', this._plotPath);
+        this.navigationCalculatorPopup.element.addPardusKeyDownListener('plot_key', {code: 13}, (event) => {this._plotPath(event)});
+        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', (event) => {this._plotPath(event)});
     }
 
     _handlePartialRefresh(func) {
