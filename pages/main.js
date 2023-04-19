@@ -1282,6 +1282,39 @@ class MainPage {
         });
     }
 
+    _plotPath(event) {
+        if (!this.navigationCalculatorPopup.isVisible()) {
+            return
+        }
+
+        event.preventDefault();
+
+        this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('disabled', 'true');
+        this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plotting...';
+        this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center; color: green; background-color: silver');
+        this.navigationCalculatorPopup.getRouteFrom(this.navArea.centre_tile.tile_id).then((route) => {
+            PardusOptionsUtility.setVariableValue('tiles_to_highlight', route.join(','));
+            PardusOptionsUtility.setVariableValue('autopilot_forward', true);
+            this.navigationCalculatorPopup.hide();
+            MsgFramePage.sendMessage('Plotted route to destination', 'info');
+
+            this.tile_set = new Map();
+
+            // Initialise the tile set
+            for (const tile_str of route) {
+                this.tile_set.set(tile_str.toString(), this.default_colour);
+            }
+
+            this.navArea.refreshTilesToHighlight(this.tile_set);
+        }).catch((error) => {
+            MsgFramePage.sendMessage('Unable to get route to destination', 'error');
+        }).finally(() => {
+            this.navigationCalculatorPopup.getCalculateButtonElement().removeAttribute('disabled');
+            this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plot route';
+            this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center;');
+        });
+    }
+
     // Credit to Victoria Axworthy (Orion), and Math (Orion)
     _addNavigationCalculatorPopup() {
         this.navigationCalculatorPopup = new NavigationCalculatorPopup();
@@ -1307,31 +1340,14 @@ class MainPage {
             }
         });
 
-        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', () => {
-            this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('disabled', 'true');
-            this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plotting...';
-            this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center; color: green; background-color: silver');
-            this.navigationCalculatorPopup.getRouteFrom(this.navArea.centre_tile.tile_id).then((route) => {
-                PardusOptionsUtility.setVariableValue('tiles_to_highlight', route.join(','));
+        this.navigationCalculatorPopup.element.addPardusKeyDownListener('plot_key', {code: 13}, () => {
+            if (this.navigationCalculatorPopup.isVisible()) {
                 this.navigationCalculatorPopup.hide();
-                MsgFramePage.sendMessage('Plotted route to destination', 'info');
-
-                this.tile_set = new Map();
-
-                // Initialise the tile set
-                for (const tile_str of route) {
-                    this.tile_set.set(tile_str.toString(), this.default_colour);
-                }
-
-                this.navArea.refreshTilesToHighlight(this.tile_set);
-            }).catch((error) => {
-                MsgFramePage.sendMessage('Unable to get route to destination', 'error');
-            }).finally(() => {
-                this.navigationCalculatorPopup.getCalculateButtonElement().removeAttribute('disabled');
-                this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plot route';
-                this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center;');                
-            });
+                event.preventDefault();
+            }
         });
+
+        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', this._plotPath);
     }
 
     _handlePartialRefresh(func) {
