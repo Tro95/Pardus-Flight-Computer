@@ -1341,13 +1341,15 @@ class NavigationCalculatorPopup {
     _create() {
         this.element = document.createElement('div');
         this.element.id = this.id;
+        const width = 520;
+
         Object.assign(this.element.style, {
             backgroundColor: '#00002C',
             border: '2px outset #335',
             left: '50%',
             top: '35%',
-            width: 500 + 'px',
-            marginLeft: -500 / 2 + 'px',
+            width: width + 'px',
+            marginLeft: -width / 2 + 'px',
             marginTop: -175 / 2 + 'px',
             position: 'fixed',
             zIndex: 9,
