@@ -873,15 +873,19 @@ class NavigationOptions {
         }
 
         if ('gyro' in this.configuration) {
-            options.wormhole_cost = this.configuration.gyro.wormhole_cost
+            options.wormhole_cost = this.configuration.gyro.wormhole_cost;
         }
 
         if ('gas_flux_capacitor' in this.configuration) {
-            options.gas_flux_capacitor = this.configuration.gas_flux_capacitor.strength
+            options.gas_flux_capacitor = this.configuration.gas_flux_capacitor.strength;
         }
 
         if ('energy_flux_capacitor' in this.configuration) {
-            options.energy_flux_capacitor = this.configuration.energy_flux_capacitor.strength
+            options.energy_flux_capacitor = this.configuration.energy_flux_capacitor.strength;
+        }
+
+        if ('effective_maneuver' in this.configuration) {
+            options.x_hole_cost = estimateXYHoleAPCost(this.configuration.effective_maneuver);
         }
 
         /**
@@ -907,10 +911,18 @@ class NavigationOptions {
         return Promise.all([
             this._refreshShipEquipment(),
             this._refreshAdvancedSkills(),
+            this._refreshSkills(),
         ]).then(() => {
             this.saveConfiguration();
         }).then(() => {
             this.reloadHtml();
+        });
+    }
+
+    _refreshSkills() {
+        return this._fetchPardusPage('overview_stats.php').then((dom) => {
+            const maneuver = Number(dom.getElementById('maneuver_actual').childNodes[0].textContent);
+            this.configuration.effective_maneuver = maneuver;
         });
     }
 
@@ -1088,8 +1100,9 @@ class NavigationOptions {
         const gyroHtml = 'gyro' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.gyro.image}' width='32' height='10'/> ${this.configuration.gyro.name}` : 'None';
         const gasFluxCapacitorHtml = 'gas_flux_capacitor' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.gas_flux_capacitor.image}' width='32' height='10'/> ${this.configuration.gas_flux_capacitor.name}` : 'None';
         const energyFluxCapacitorHtml = 'energy_flux_capacitor' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.energy_flux_capacitor.image}' width='32' height='10'/> ${this.configuration.energy_flux_capacitor.name}` : 'None';
+        const xYHoleAPCost = 'effective_maneuver' in this.configuration ? `${estimateXYHoleAPCost(this.configuration.effective_maneuver)} <img src='${PardusOptionsUtility.getImagePackUrl()}turns.png' width='9.5'/>` : `2,500 <img src='${PardusOptionsUtility.getImagePackUrl()}turns.png' width='9.5'/>`;
 
-        return `<tbody><tr><td>Drive: </td><td id='navigation-options-drive'>${driveHtml}</td></tr><tr><td>Navigation skill: </td><td id='navigation-options-skill'>${navigationHtml}</td></tr><tr><td>Gyro Stabilizer: </td><td id='navigation-options-gyro'>${gyroHtml}</td></tr><tr><td>Gas Flux Capacitor: </td><td id='navigation-options-gas'>${gasFluxCapacitorHtml}</td></tr><tr><td>Energy Flux Capacitor: </td><td id='navigation-options-energy'>${energyFluxCapacitorHtml}</td></tr><tr><td colspan='2' align='center'><input id='refresh-navigation-options' type='submit' tabindex='-1' value='Refresh'/></td></tr></tbody>`;
+        return `<tbody><tr><td>Drive: </td><td id='navigation-options-drive'>${driveHtml}</td></tr><tr><td>Navigation skill: </td><td id='navigation-options-skill'>${navigationHtml}</td></tr><tr><td>Gyro Stabilizer: </td><td id='navigation-options-gyro'>${gyroHtml}</td></tr><tr><td>Gas Flux Capacitor: </td><td id='navigation-options-gas'>${gasFluxCapacitorHtml}</td></tr><tr><td>Energy Flux Capacitor: </td><td id='navigation-options-energy'>${energyFluxCapacitorHtml}</td></tr><tr><td>X/Y-hole jump cost: </td><td id='navigation-options-xyhole'>${xYHoleAPCost}</td></tr><tr><td colspan='2' align='center'><input id='refresh-navigation-options' type='submit' tabindex='-1' value='Refresh'/></td></tr></tbody>`;
     }
 
     addRefreshListener() {
