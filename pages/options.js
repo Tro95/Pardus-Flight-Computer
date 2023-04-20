@@ -141,6 +141,16 @@ class OptionsPage {
             },
         });
 
+        autopilot_options.addBooleanOption({
+            variable: 'autopilot_check_for_npcs',
+            description: 'Check for NPCs',
+            defaultValue: true,
+            info: {
+                title: 'Check for NPCs',
+                description: 'This setting determines whether autopilot will check for NPCs on the route, and stop before landing on them. Disabling this option will make the autopilot attempt to fly through NPCs.',
+            },
+        });
+
         autopilot_options.addNumericOption({
             variable: 'autopilot_max_steps',
             description: 'Maximum steps',

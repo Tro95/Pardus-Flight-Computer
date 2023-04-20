@@ -698,6 +698,8 @@ class NavArea {
         const tile_string = PardusOptionsUtility.getVariableValue(`tiles_to_highlight`, '');
         const path = [];
 
+        const check_for_npcs = PardusOptionsUtility.getVariableValue('autopilot_check_for_npcs', true);
+
         // Initialise the tile set
         for (const tile_str of tile_string.split(',')) {
             path.push(tile_str.split('|')[0]);
@@ -749,7 +751,7 @@ class NavArea {
             }
 
             // If the tile has an NPC, we want to stop on the tile before it
-            if (target_tile.hasNpc()) {
+            if (check_for_npcs && target_tile.hasNpc()) {
                 MsgFramePage.sendMessage('NPC is in the way, please fly around', 'error');
                 break;
             }
