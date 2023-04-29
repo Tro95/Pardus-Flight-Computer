@@ -234,7 +234,6 @@ class Tile {
             return false;
         }
 
-
         if (this.highlights.length === 0) {
             return this._clearAllHighlighting();
         }
@@ -752,7 +751,6 @@ class NavArea {
 
             // If the tile has an NPC, we want to stop on the tile before it
             if (check_for_npcs && target_tile.hasNpc()) {
-                MsgFramePage.sendMessage('NPC is in the way, please fly around', 'error');
                 break;
             }
 
@@ -777,6 +775,8 @@ class NavArea {
 
         if (index_to_fly_to > 0) {
             return this._nav(path_to_fly[current_index_on_path + index_to_fly_to]);
+        } else if (check_for_npcs && index_to_fly_to < path_to_fly.length - 1 && this.getTileOnNav(path_to_fly[index_to_fly_to + 1]).hasNpc()) {
+            MsgFramePage.sendMessage('NPC is in the way, please fly around', 'error');
         } else if (this.centre_tile.isWormhole()) {
             return this._warp(path_to_fly[current_index_on_path]);
         } else if (this.centre_tile.isXHole() || this.centre_tile.isYHole()) {
