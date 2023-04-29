@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Pardus Flight Computer
-// @version         0.12.10
+// @version         0.12.11
 // @description     Flight Computer to assist pathfinding in Pardus
 // @author          Tro (Artemis)
 // @icon            https://static.pardus.at/img/std/equipment/drive_interphased_enhanced.png
@@ -12,13 +12,13 @@
 // @grant           GM_setValue
 // @grant           GM_getValue
 // @require         https://raw.githubusercontent.com/Tro95/Pardus-Options-Library/v2.6.8/dist/pardus-options-library.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.10/data/colours.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.10/data/sectors.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.10/pages/options.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.10/pages/main.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.10/pages/msgframe.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.10/pages/ship2opponent_combat.js
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.10/utility/helpers.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.11/data/colours.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.11/data/sectors.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.11/pages/options.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.11/pages/main.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.11/pages/msgframe.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.11/pages/ship2opponent_combat.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/v0.12.11/utility/helpers.js
 // @downloadURL     https://github.com/Tro95/Pardus-Flight-Computer/raw/autopilot/pardus_flight_computer.user.js
 // @updateURL       https://github.com/Tro95/Pardus-Flight-Computer/raw/autopilot/pardus_flight_computer.meta.js
 // ==/UserScript==
