@@ -262,7 +262,7 @@ class Tile {
             this.element.firstElementChild.style.opacity = 1;
         }
 
-        return true;  
+        return true;
     }
 
     _getHighlightedColourString() {
@@ -384,7 +384,7 @@ class NavArea {
                     }
                 } else if (direction_x == 0) {
                     // Vertical auto-pilot will attempt to navigate right, then left
-                    
+
                     candidate_tile = this.getTileOrVirtual(current_tile.x + 1, current_tile.y + direction_y, current_tile);
 
                     if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
@@ -707,7 +707,7 @@ class NavArea {
         if (path.length === 0) {
             MsgFramePage.sendMessage('No autopilot path programmed', 'error');
             return;
-        }        
+        }
 
         const forward_direction = PardusOptionsUtility.getVariableValue('autopilot_forward', true);
         const max_steps = PardusOptionsUtility.getVariableValue('autopilot_max_steps', 10);
@@ -775,8 +775,9 @@ class NavArea {
 
         if (index_to_fly_to > 0) {
             return this._nav(path_to_fly[current_index_on_path + index_to_fly_to]);
-        } else if (check_for_npcs && index_to_fly_to < path_to_fly.length - 1 && this.getTileOnNav(path_to_fly[index_to_fly_to + 1]).hasNpc()) {
+        } else if (check_for_npcs && current_index_on_path + index_to_fly_to < path_to_fly.length - 1 && this.getTileOnNav(path_to_fly[current_index_on_path + index_to_fly_to + 1])?.hasNpc()) {
             MsgFramePage.sendMessage('NPC is in the way, please fly around', 'error');
+            return;
         } else if (this.centre_tile.isWormhole()) {
             return this._warp(path_to_fly[current_index_on_path]);
         } else if (this.centre_tile.isXHole() || this.centre_tile.isYHole()) {
