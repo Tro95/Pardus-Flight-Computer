@@ -283,7 +283,44 @@ class OptionsPage {
             rows: 3
         });
 
-        const mapper_box = subtab.addBox({
+        const autopilot_options = subtab.addBoxLeft({
+            heading: 'Autopilot Options',
+            description: 'These are the general options for autopilot. Autopilot will attempt to fly along the route configured in the route tiles box, ensuring that it only travels over tiles contained in the route. If the route configured is not continuous, autopilot will fly to the end of the current continuous section and stop. Autopilot will only work when you are somewhere along the route; one tile off and autopilot will not move.',
+        });
+
+        autopilot_options.addBooleanOption({
+            variable: 'squads_enable_autopilot',
+            description: 'Enable autopilot',
+            defaultValue: true,
+            info: {
+                title: 'Autopilot',
+                description: 'Enabling autopilot will allow you to fly along the route configured in the route tiles box using the key configured for flying. It is recommended to enable route highlighting with the autopilot, so you can visually see the route the autopilot will fly. This option does not enable or disable the route highlighting functionality.',
+            },
+        });
+
+        autopilot_options.addBooleanOption({
+            variable: 'squads_autopilot_forward',
+            description: 'Forward direction',
+            defaultValue: true,
+            info: {
+                title: 'Autopilot Direction',
+                description: 'This setting determines the direction autopilot will fly in for the configured route in the route tiles box. Forwards will fly from the first tile to the last tile in the route tiles box, and backwards will fly from the last to the first. This setting can be changed using the configured key to change direction.',
+            },
+        });
+
+        autopilot_options.addNumericOption({
+            variable: 'squads_autopilot_max_steps',
+            description: 'Maximum steps',
+            defaultValue: 8,
+            min: 1,
+            max: 8,
+            info: {
+                title: 'Autopilot Steps',
+                description: 'The maximum number of tiles autopilot will fly over every keypress. The maximum achievable is 8 tiles, allowing you to fly as far as you can see on your nav. The minimum is 1, and will allow you to fly one tile at a time.',
+            },
+        });
+
+        const mapper_box = subtab.addBoxBottom({
             heading: 'Mapper',
             description: 'The links below let you view the currently-stored route.'
         });

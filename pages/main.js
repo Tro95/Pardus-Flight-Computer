@@ -498,7 +498,7 @@ class NavArea {
         this.centre_tile.is_centre_tile = true;
 
         /* For squads or other situations where no userloc is available */
-        if (this.centre_tile.tile_id === '-1') {
+        if (!this.centre_tile.tile_id || this.centre_tile.tile_id === '-1') {
             if (this.grid[centre_y - 1][centre_x].tile_id !== '-1') {
                 const newId = parseInt(this.grid[centre_y - 1][centre_x].tile_id) + 1;
                 this.centre_tile.setId(newId.toString());
@@ -694,7 +694,7 @@ class NavArea {
     }
 
     fly() {
-        const tile_string = PardusOptionsUtility.getVariableValue(`tiles_to_highlight`, '');
+        const tile_string = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
         const path = [];
 
         const check_for_npcs = PardusOptionsUtility.getVariableValue('autopilot_check_for_npcs', true);
@@ -709,8 +709,8 @@ class NavArea {
             return;
         }
 
-        const forward_direction = PardusOptionsUtility.getVariableValue('autopilot_forward', true);
-        const max_steps = PardusOptionsUtility.getVariableValue('autopilot_max_steps', 10);
+        const forward_direction = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
+        const max_steps = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_max_steps`, 10);
 
         let path_to_fly = path;
 
@@ -837,7 +837,10 @@ class NavArea {
 }
 
 class NavigationOptions {
-    constructor() {
+    constructor(options = {
+        squad: false
+    }) {
+        this.isSquad = options.squad;
         this.id = 'pardus-flight-computer-navigation-calculator-configuration';
         this.configuration = PardusOptionsUtility.getVariableValue('navigation-configuration', {});
         this._initDriveMap();
@@ -867,6 +870,28 @@ class NavigationOptions {
             }
         };
 
+        /**
+         *  Credit to Asdwolf for the logic from his script 
+         */
+        const epoch = 1449120361000 //December 3, 2015 05:26:01 GMT
+        const days = (Date.now() - epoch)/1000/60/60/24;
+        const wormhole_cycle = ['procyon', 'nhandu', 'enif', 'quaack'];
+
+        switch (PardusOptionsUtility.getUniverse()) {
+            case 'artemis':
+            case 'orion':
+                options.wormhole_seals[wormhole_cycle[Math.floor(days / 2) % 4]] = false;
+                break;
+            case 'pegasus':
+                options.wormhole_seals[wormhole_cycle[Math.floor((days + 3) / 2) % 4]] = false;
+        }
+
+        if (this.isSquad) {
+            options.drive_speed = 2;
+            options.x_hole_cost = Infinity;
+            return options;
+        }
+
         if ('drive' in this.configuration) {
             options.drive_speed = this.configuration.drive.speed;
         }
@@ -889,22 +914,6 @@ class NavigationOptions {
 
         if ('effective_maneuver' in this.configuration) {
             options.x_hole_cost = estimateXYHoleAPCost(this.configuration.effective_maneuver);
-        }
-
-        /**
-         *  Credit to Asdwolf for the logic from his script 
-         */
-        const epoch = 1449120361000 //December 3, 2015 05:26:01 GMT
-        const days = (Date.now() - epoch)/1000/60/60/24;
-        const wormhole_cycle = ['procyon', 'nhandu', 'enif', 'quaack'];
-
-        switch (PardusOptionsUtility.getUniverse()) {
-            case 'artemis':
-            case 'orion':
-                options.wormhole_seals[wormhole_cycle[Math.floor(days / 2) % 4]] = false;
-                break;
-            case 'pegasus':
-                options.wormhole_seals[wormhole_cycle[Math.floor((days + 3) / 2) % 4]] = false;
         }
 
         return options;        
@@ -1080,6 +1089,11 @@ class NavigationOptions {
     }
 
     reloadHtml() {
+        if (this.isSquad) {
+            document.getElementById(this.id).innerHTML = this.getSquadInnerHtml();
+            return;
+        }
+        
         document.getElementById(this.id).innerHTML = this.getInnerHtml();
         this.addRefreshListener();
     }
@@ -1097,6 +1111,12 @@ class NavigationOptions {
         });
     }
 
+    getSquadInnerHtml() {
+        const driveHtml = `<img src='${PardusOptionsUtility.getImagePackUrl()}squadrons/bomber_squad_3.png' width='32' height='10'/> Bomber squad`;
+
+        return `<tbody><tr><td>Drive:</td><td id='navigation-options-drive'>${driveHtml}</td></tr></tbody>`;
+    }
+
     getInnerHtml() {
         const driveHtml = 'drive' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.drive.image}' width='32' height='10'/> ${this.configuration.drive.name}` : 'None';
         const navigationHtml = 'navigation_level' in this.configuration ? `Level ${this.configuration.navigation_level}/3` : 'Level 0/3';
@@ -1110,6 +1130,11 @@ class NavigationOptions {
 
     addRefreshListener() {
         const button = document.getElementById('refresh-navigation-options');
+
+        if (!button) {
+            return;
+        }
+
         button.addEventListener('click', () => {
             button.setAttribute('disabled', 'true');
             button.value = 'Refreshing...';
@@ -1127,6 +1152,10 @@ class NavigationOptions {
     }
 
     getHtml() {
+        if (this.isSquad) {
+            return `<table id='${this.id}' style='width: 100%;'>${this.getSquadInnerHtml()}</table>`;
+        }
+
         return `<table id='${this.id}' style='width: 100%;'>${this.getInnerHtml()}</table>`;
     }
 }
@@ -1255,9 +1284,12 @@ class NavigationFavourites {
 }
 
 class NavigationCalculatorPopup {
-    constructor() {
+    constructor(options = {
+        squad: false
+    }) {
+        this.isSquad = options.squad;
         this.id = 'pardus-flight-computer-navigation-calculator-popup';
-        this.navigationOptions = new NavigationOptions();
+        this.navigationOptions = new NavigationOptions(options);
         this.navigationFavourites = new NavigationFavourites();
 
         if (document.getElementById(this.id)) {
@@ -1341,6 +1373,7 @@ class NavigationCalculatorPopup {
         });
     }
 
+    // Credit to Victoria Axworthy (Orion), and Math (Orion)
     _create() {
         this.element = document.createElement('div');
         this.element.id = this.id;
@@ -1399,7 +1432,7 @@ class MainPage {
 
         this.navArea = new NavArea(this.tile_set, options);
         this._addAutopilot();
-        this._addNavigationCalculatorPopup();
+        this._addNavigationCalculatorPopup(options);
 
         this._handlePartialRefresh(() => {
             this.navArea.reload();
@@ -1407,7 +1440,7 @@ class MainPage {
     }
 
     _addAutopilot() {
-        if (!PardusOptionsUtility.getVariableValue('enable_autopilot', true)) {
+        if (!PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}enable_autopilot`, true)) {
             return;
         }
 
@@ -1416,7 +1449,7 @@ class MainPage {
         });
 
         document.addPardusKeyDownListener('toggle_autopilot_direction', {code: 67}, () => {
-            const forward = PardusOptionsUtility.getVariableValue('autopilot_forward', false);
+            const forward = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, false);
 
             if (forward) {
                 MsgFramePage.sendMessage('Autopilot heading backwards', 'info');
@@ -1424,7 +1457,7 @@ class MainPage {
                 MsgFramePage.sendMessage('Autopilot heading forward', 'info');
             }
 
-            PardusOptionsUtility.setVariableValue('autopilot_forward', !forward);
+            PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, !forward);
         });
     }
 
@@ -1439,8 +1472,8 @@ class MainPage {
         this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plotting...';
         this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center; color: green; background-color: silver');
         this.navigationCalculatorPopup.getRouteFrom(this.navArea.centre_tile.tile_id).then((route) => {
-            PardusOptionsUtility.setVariableValue('tiles_to_highlight', route.join(','));
-            PardusOptionsUtility.setVariableValue('autopilot_forward', true);
+            PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}tiles_to_highlight`, route.join(','));
+            PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
             this.navigationCalculatorPopup.hide();
             MsgFramePage.sendMessage('Plotted route to destination', 'info');
 
@@ -1461,9 +1494,10 @@ class MainPage {
         });
     }
 
-    // Credit to Victoria Axworthy (Orion), and Math (Orion)
-    _addNavigationCalculatorPopup() {
-        this.navigationCalculatorPopup = new NavigationCalculatorPopup();
+    _addNavigationCalculatorPopup(options = {
+        squad: false
+    }) {
+        this.navigationCalculatorPopup = new NavigationCalculatorPopup(options);
 
         document.addPardusKeyDownListener('open_navigation_key', {code: 68}, (event) => {
             if (!this.navigationCalculatorPopup.isVisible()) {
