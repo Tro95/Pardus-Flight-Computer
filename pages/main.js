@@ -761,12 +761,9 @@ class NavArea {
                 break;
             }
 
-            /* 
-             *  Is the tile before the same? Due to recursion, this should be fine
-             *  Not true, PF-06 [10,19] -> [14,16] introduces an extra tile in the middle of the route, so added a check for length equality
-             *  This still may fail in some niche situations, but it's probably fine
-             */
-            if ((direct_route[direct_route.length - 2].tile_id === path_to_fly[current_index_on_path + step - 1]) && (direct_route.length === step + 1)) {
+            const desired_direct_route = path_to_fly.slice(current_index_on_path, current_index_on_path + 1 + step);
+
+            if (JSON.stringify(direct_route.map(i => i.tile_id)) === JSON.stringify(desired_direct_route)) {
                 index_to_fly_to = step;
             } else {
                 break;
@@ -916,6 +913,10 @@ class NavigationOptions {
             options.x_hole_cost = estimateXYHoleAPCost(this.configuration.effective_maneuver);
         }
 
+        if ('pathfinder' in this.configuration) {
+            options.pathfinder = this.configuration.pathfinder;
+        }
+
         return options;        
     }
 
@@ -924,6 +925,7 @@ class NavigationOptions {
             this._refreshShipEquipment(),
             this._refreshAdvancedSkills(),
             this._refreshSkills(),
+            this._refreshCrew(),
         ]).then(() => {
             this.saveConfiguration();
         }).then(() => {
@@ -935,6 +937,34 @@ class NavigationOptions {
         return this._fetchPardusPage('overview_stats.php').then((dom) => {
             const maneuver = Number(dom.getElementById('maneuver_actual').childNodes[0].textContent);
             this.configuration.effective_maneuver = maneuver;
+        });
+    }
+
+    _refreshCrew() {
+        return this._fetchPardusPage('inspect_crew.php').then((dom) => {
+            const tables = dom.querySelectorAll('.messagestyle');
+
+            let foundPathfinder = false;
+
+            for (const table of tables) {
+                // Primary pathfinder
+                if (table.innerText.search(/Primary ability:\s*Pathfinder/) !== -1) {
+                    this.configuration.pathfinder = 'primary';
+                    foundPathfinder = true;
+                    break;
+                }
+
+                // Secondary pathfinder
+                if (table.innerText.search(/Secondary ability:\s*Pathfinder/) !== -1) {
+                    this.configuration.pathfinder = 'secondary';
+                    foundPathfinder = true;
+                    break;
+                }
+            }
+
+            if (!foundPathfinder) {
+                this.configuration.pathfinder = null;
+            }
         });
     }
 
@@ -1124,8 +1154,9 @@ class NavigationOptions {
         const gasFluxCapacitorHtml = 'gas_flux_capacitor' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.gas_flux_capacitor.image}' width='32' height='10'/> ${this.configuration.gas_flux_capacitor.name}` : 'None';
         const energyFluxCapacitorHtml = 'energy_flux_capacitor' in this.configuration ? `<img src='${PardusOptionsUtility.getImagePackUrl()}equipment/${this.configuration.energy_flux_capacitor.image}' width='32' height='10'/> ${this.configuration.energy_flux_capacitor.name}` : 'None';
         const xYHoleAPCost = 'effective_maneuver' in this.configuration ? `${estimateXYHoleAPCost(this.configuration.effective_maneuver)} <img src='${PardusOptionsUtility.getImagePackUrl()}turns.png' width='9.5'/>` : `2,500 <img src='${PardusOptionsUtility.getImagePackUrl()}turns.png' width='9.5'/>`;
+        const pathfinderHtml = 'pathfinder' in this.configuration && this.configuration.pathfinder ? `${this.configuration.pathfinder}` : 'None';
 
-        return `<tbody><tr><td>Drive: </td><td id='navigation-options-drive'>${driveHtml}</td></tr><tr><td>Navigation skill: </td><td id='navigation-options-skill'>${navigationHtml}</td></tr><tr><td>Gyro Stabilizer: </td><td id='navigation-options-gyro'>${gyroHtml}</td></tr><tr><td>Gas Flux Capacitor: </td><td id='navigation-options-gas'>${gasFluxCapacitorHtml}</td></tr><tr><td>Energy Flux Capacitor: </td><td id='navigation-options-energy'>${energyFluxCapacitorHtml}</td></tr><tr><td>X/Y-hole jump cost: </td><td id='navigation-options-xyhole'>${xYHoleAPCost}</td></tr><tr><td colspan='2' align='center'><input id='refresh-navigation-options' type='submit' tabindex='-1' value='Refresh'/></td></tr></tbody>`;
+        return `<tbody><tr><td>Drive: </td><td id='navigation-options-drive'>${driveHtml}</td></tr><tr><td>Navigation skill: </td><td id='navigation-options-skill'>${navigationHtml}</td></tr><tr><td>Gyro Stabilizer: </td><td id='navigation-options-gyro'>${gyroHtml}</td></tr><tr><td>Gas Flux Capacitor: </td><td id='navigation-options-gas'>${gasFluxCapacitorHtml}</td></tr><tr><td>Energy Flux Capacitor: </td><td id='navigation-options-energy'>${energyFluxCapacitorHtml}</td></tr><tr><td>X/Y-hole jump cost: </td><td id='navigation-options-xyhole'>${xYHoleAPCost}</td></tr><tr><td>Pathfinder: </td><td id='navigation-options-pathfinder'>${pathfinderHtml}</td></tr><tr><td colspan='2' align='center'><input id='refresh-navigation-options' type='submit' tabindex='-1' value='Refresh'/></td></tr></tbody>`;
     }
 
     addRefreshListener() {
