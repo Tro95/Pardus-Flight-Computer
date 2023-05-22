@@ -771,6 +771,7 @@ class NavArea {
         }
 
         if (index_to_fly_to > 0) {
+            PardusOptionsUtility.setVariableValue('expected_route', path_to_fly.slice(current_index_on_path, current_index_on_path + index_to_fly_to + 1));
             return this._nav(path_to_fly[current_index_on_path + index_to_fly_to]);
         } else if (check_for_npcs && current_index_on_path + index_to_fly_to < path_to_fly.length - 1 && this.getTileOnNav(path_to_fly[current_index_on_path + index_to_fly_to + 1])?.hasNpc()) {
             MsgFramePage.sendMessage('NPC is in the way, please fly around', 'error');

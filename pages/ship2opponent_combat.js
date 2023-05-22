@@ -45,7 +45,7 @@ class Ship2opponent_combatPage {
             }
         }
 
-        PardusOptionsUtility.setVariableValue('expected_route', [current_position]);
+        PardusOptionsUtility.setVariableValue('expected_route', []);
         PardusOptionsUtility.setVariableValue('last_tile_id', this.tile_id);
     }
 }
