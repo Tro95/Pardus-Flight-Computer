@@ -191,6 +191,20 @@ class OptionsPage {
             },
         });
 
+        autopilot_options.addKeyDownOption({
+            variable: 'modify_autopilot_route',
+            description: 'Modify route',
+            defaultValue: {
+                code: 77,
+                key: "KeyM",
+                description: "m"
+            },
+            info: {
+                title: 'Modify Route Key',
+                description: 'Temporarily adjust the route, and press the key a second time to stop.',
+            },
+        });
+
         const mapper_box = subtab.addBoxBottom({
             heading: 'Mapper',
             description: 'The links below let you view the currently-stored route.'

@@ -577,18 +577,28 @@ class NavArea {
 
         const recording_mode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
 
+        const recording = PardusOptionsUtility.getVariableValue('recording', false);
+        const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false);
+
         document.addPardusKeyDownListener('toggle_recording_keypress', {code: 82}, this._addRecordingToggleHander);
 
-        if (PardusOptionsUtility.getVariableValue('recording', false)) {
+        if (recording || modifyRouteRecording) {
 
             const recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
             const bad_recorded_tiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
+            const modified_route = PardusOptionsUtility.getVariableValue('modified_route', []);
 
             if (expected_route.includes(current_position)) {
                 for (const flown_tile of expected_route) {
 
-                    if (recording_mode === 'all' || recording_mode === 'good') {
+                    if (recording && (recording_mode === 'all' || recording_mode === 'good')) {
                         recorded_tiles.add(flown_tile);
+                    }
+
+                    if (modifyRouteRecording) {
+                        if (modified_route.indexOf(flown_tile) < 0) {
+                            modified_route.push(flown_tile);
+                        }
                     }
 
                     bad_recorded_tiles.delete(flown_tile);
@@ -601,6 +611,7 @@ class NavArea {
 
             PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recorded_tiles));
             PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(bad_recorded_tiles));
+            PardusOptionsUtility.setVariableValue('modified_route', modified_route);
 
             for (const tile of this.navigatableTiles()) {
                 const path = this.getPathTo(tile);
@@ -610,9 +621,9 @@ class NavArea {
                     PardusOptionsUtility.setVariableValue('expected_route', path_tile_ids);
                 });
             }
-        } else {
-            PardusOptionsUtility.setVariableValue('expected_route', []);
         }
+
+        PardusOptionsUtility.setVariableValue('expected_route', []);
 
         if (current_position) {
             PardusOptionsUtility.setVariableValue('last_tile_id', current_position); 
@@ -694,6 +705,11 @@ class NavArea {
     }
 
     fly() {
+        if (PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false)) {
+            MsgFramePage.sendMessage('Modifying route, cannot use autopilot', 'error');
+            return;
+        }
+
         const tile_string = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
         const path = [];
 
@@ -1478,6 +1494,66 @@ class MainPage {
 
         document.addPardusKeyDownListener('move_along_path_key', {code: 70}, () => {
             this.navArea.fly();
+        });
+
+        document.addPardusKeyDownListener('modify_autopilot_route', {code: 77}, () => {
+            const modifyRoute = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false);
+            PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}modify_route`, !modifyRoute);
+
+            if (!modifyRoute) {
+                MsgFramePage.sendMessage('Modifying route', 'info');
+                PardusOptionsUtility.setVariableValue(`modified_route`, []);
+            } else {
+                const modified_route = PardusOptionsUtility.getVariableValue('modified_route', []);
+
+                if (modified_route.length < 2) {
+                    MsgFramePage.sendMessage('Cancelling route modification', 'info');
+                    return;
+                }
+
+                const forward = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
+                const tile_string = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
+                const route_array = [];
+
+                for (const tile_str of tile_string.split(',')) {
+                    route_array.push(tile_str.split('|')[0]);
+                }
+
+                if (!forward) {
+                    route_array.reverse();
+                }
+
+                let start_index = route_array.indexOf(modified_route[0]);
+                let end_index = route_array.indexOf(modified_route[modified_route.length - 1]);
+
+                if (start_index < 0 || end_index < 0) {
+                    MsgFramePage.sendMessage('Route modification must start and end on the existing route', 'error');
+                    return;
+                }
+
+                if (start_index > end_index) {
+                    route_array.splice(end_index, start_index + 1 - end_index, ...modified_route.reverse());
+                } else {
+                    route_array.splice(start_index, end_index + 1 - start_index, ...modified_route);
+                }
+
+                if (!forward) {
+                    route_array.reverse();
+                }
+
+                PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}tiles_to_highlight`, route_array.join(','));
+                this.tile_set = new Map();
+
+                // Initialise the tile set
+                for (const tile_str of route_array) {
+                    this.tile_set.set(tile_str.toString(), this.default_colour);
+                }
+
+                this.navArea.refreshTilesToHighlight(this.tile_set);
+
+                MsgFramePage.sendMessage('Saving route', 'info');
+            }
+
         });
 
         document.addPardusKeyDownListener('toggle_autopilot_direction', {code: 67}, () => {
