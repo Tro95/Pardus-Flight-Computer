@@ -1557,6 +1557,11 @@ class MainPage {
         });
 
         document.addPardusKeyDownListener('toggle_autopilot_direction', {code: 67}, () => {
+            if (PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false)) {
+                MsgFramePage.sendMessage('Cannot change autopilot direction whilst modifying path', 'error');
+                return;
+            }
+
             const forward = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, false);
 
             if (forward) {
@@ -1582,6 +1587,7 @@ class MainPage {
         this.navigationCalculatorPopup.getRouteFrom(this.navArea.centre_tile.tile_id).then((route) => {
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}tiles_to_highlight`, route.join(','));
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
+            PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}modify_route`, false);
             this.navigationCalculatorPopup.hide();
             MsgFramePage.sendMessage('Plotted route to destination', 'info');
 
