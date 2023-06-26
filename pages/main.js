@@ -1295,7 +1295,7 @@ class NavigationFavourite {
 class NavigationFavourites {
     constructor() {
         this.id = 'pardus-flight-computer-navigation-calculator-favourites';
-        this.numberOfFavourites = 4;
+        this.numberOfFavourites = PardusOptionsUtility.getVariableValue('navigation_number_of_favourites', 4);
         this.favourites = [];
         this.setupFavourites();
     }

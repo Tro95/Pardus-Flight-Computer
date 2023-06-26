@@ -252,6 +252,14 @@ class OptionsPage {
                 description: 'This button opens the navigation box. It can be closed by pressing the escape key, or by clicking the cancel button. Disabling this option effectively disables the nagivation calculator.',
             },
         });
+
+        route_calculator_general_options.addNumericOption({
+            variable: 'navigation_number_of_favourites',
+            description: 'Number of favourites',
+            defaultValue: 4,
+            min: 1,
+            max: 10,
+        });
     }
 
     squadsOptions(subtab) {
