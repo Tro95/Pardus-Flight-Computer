@@ -500,7 +500,12 @@ class NavArea {
         /* For squads or other situations where no userloc is available */
         if (!this.centre_tile.tile_id || this.centre_tile.tile_id === '-1') {
             if (this.grid[centre_y - 1][centre_x].tile_id !== '-1') {
-                const newId = parseInt(this.grid[centre_y - 1][centre_x].tile_id) + 1;
+                let newId = parseInt(this.grid[centre_y - 1][centre_x].tile_id) + 1;
+
+                if (isNaN(newId)) {
+                    newId = parseInt(this.grid[centre_y + 1][centre_x].tile_id) - 1;
+                }
+
                 this.centre_tile.setId(newId.toString());
             }
         }
@@ -1393,24 +1398,13 @@ class NavigationCalculatorPopup {
     }
 
     _getRouteTo(waypoints = []) {
-        const initial_url = 'https://tro.xcom-alliance.info/get-backend-url.php';
-
+        const url = 'https://pardusapcalculator.uk';
         const options = this.navigationOptions.getOptions();
 
-        return fetch(initial_url).then((response) => {
-            if (!response.ok) {
-                throw Error(response.statusText);
-            }
-
-            return response.json();
-        }).then((json) => {
-            return json.url;
-        }).then((url) => {
-            return fetch(`${url}/route?`+ new URLSearchParams({
-                waypoints: waypoints.join(','),
-                options: encodeURIComponent(JSON.stringify(options))
-            }));
-        }).then((response) => {
+        return fetch(`${url}/route?`+ new URLSearchParams({
+            waypoints: waypoints.join(','),
+            options: encodeURIComponent(JSON.stringify(options))
+        })).then((response) => {
             if (!response.ok) {
                 throw Error(response.statusText);
             }
@@ -1616,6 +1610,7 @@ class MainPage {
         document.addPardusKeyDownListener('open_navigation_key', {code: 68}, (event) => {
             if (!this.navigationCalculatorPopup.isVisible()) {
                 this.navigationCalculatorPopup.show();
+                console.log(this.navArea);
                 event.preventDefault();
             }
         });
