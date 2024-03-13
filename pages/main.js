@@ -36,30 +36,38 @@ class Tile {
                 this.tile_id = this.getUserloc();
             } else if (this.element.children.length > 0 && this.element.children[0].tagName === 'A') {
 
-                const child_element = this.element.children[0];
+                let child_element = this.element.children[0];
 
-                // Can we navigate to the tile?
-                if ((!child_element.hasAttribute('onclick') || child_element.getAttribute('onclick').startsWith('warp')) && (!child_element.hasAttribute('_onclick') || child_element.getAttribute('_onclick').startsWith('warp'))) {
-                    this.tile_id = this.getUserloc();
+                // Bookkeeper support
+                if (child_element.tagName === 'DIV' && child_element.getAttribute('style') === 'position:relative;') {
+                    child_element = child_element.children[0];
+                }
 
-                    if ((child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('warp')) || (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('warp'))) {
-                        this.type = 'wormhole';
+                if (this.element.children[0].tagName === 'A') {
+
+                    // Can we navigate to the tile?
+                    if ((!child_element.hasAttribute('onclick') || child_element.getAttribute('onclick').startsWith('warp')) && (!child_element.hasAttribute('_onclick') || child_element.getAttribute('_onclick').startsWith('warp'))) {
+                        this.tile_id = this.getUserloc();
+
+                        if ((child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('warp')) || (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('warp'))) {
+                            this.type = 'wormhole';
+                        }
+                    } else if (child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('nav')) {
+                        this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
+
+                        if (this.element.classList.contains('navYhole')) {
+                            this.type = 'y-hole';
+                        }
+
+                        if (this.element.classList.contains('navXhole')) {
+                            this.type = 'x-hole';
+                        }
+                    } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('nav')) {
+                        // Freeze Frame compatibility
+                        this.tile_id = child_element.getAttribute('_onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
+                    } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick') === "null") {
+                        this.tile_id = this.getUserloc();
                     }
-                } else if (child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('nav')) {
-                    this.tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
-
-                    if (this.element.classList.contains('navYhole')) {
-                        this.type = 'y-hole';
-                    }
-
-                    if (this.element.classList.contains('navXhole')) {
-                        this.type = 'x-hole';
-                    }
-                } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('nav')) {
-                    // Freeze Frame compatibility
-                    this.tile_id = child_element.getAttribute('_onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
-                } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick') === "null") {
-                    this.tile_id = this.getUserloc();
                 }
             } else if (this.element.classList.contains('navShip')) {
                 // This only happens on retreating
