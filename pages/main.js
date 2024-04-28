@@ -1009,7 +1009,20 @@ class NavigationOptions {
     _refreshShipEquipment() {
         return this._fetchPardusPage('overview_ship.php').then((dom) => {
             const tables = dom.querySelectorAll('.messagestyle');
-            const driveTd = tables[0].querySelector(' tr:nth-of-type(21) td:nth-of-type(2)');
+            const equipmentTable = tables[0];
+
+            let driveTd = null;
+
+            for (const row of equipmentTable.rows) {
+                if (row.cells[0].innerText.startsWith('Drive')) {
+                    driveTd = row.cells[1];
+                }
+            }
+
+            if (!driveTd) {
+                throw new Error('Failed to find the drive row!');
+            }
+
             const driveImage = driveTd.children[0].src.split('/')[driveTd.children[0].src.split('/').length - 1];
             this.configuration.drive = this.driveMap.get(driveImage);
 
