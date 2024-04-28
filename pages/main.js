@@ -1629,7 +1629,6 @@ class MainPage {
         document.addPardusKeyDownListener('open_navigation_key', {code: 68}, (event) => {
             if (!this.navigationCalculatorPopup.isVisible()) {
                 this.navigationCalculatorPopup.show();
-                console.log(this.navArea);
                 event.preventDefault();
             }
         });
