@@ -958,8 +958,6 @@ class NavigationOptions {
             this._refreshCrew(),
         ]).then(() => {
             this.saveConfiguration();
-        }).then(() => {
-            this.reloadHtml();
         });
     }
 
@@ -1200,10 +1198,10 @@ class NavigationOptions {
             button.setAttribute('disabled', 'true');
             button.value = 'Refreshing...';
             button.setAttribute('style', 'text-align: center; color: green; background-color: silver');
-            this.refreshOptions().finally(() => {
-                button.removeAttribute('disabled');
-                button.value = 'Plot route';
-                button.setAttribute('style', 'text-align: center;'); 
+            this.refreshOptions().catch((error) => {
+                console.log(error);
+            }).finally(() => {
+                this.reloadHtml();
             });
         });
     }
