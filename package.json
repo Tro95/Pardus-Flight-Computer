@@ -1,0 +1,35 @@
+{
+  "name": "pardus-flight-computer",
+  "version": "1.0.0",
+  "description": "Flight Computer to assist pathfinding in Pardus (https://pardus.at)",
+  "main": "pardus_flight_computer.js",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.20.1",
+    "jsdoc": "^4.0.2",
+    "webpack": "^5.48.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src",
+    "lint-fix": "eslint src --fix",
+    "gen-docs": "./node_modules/.bin/jsdoc src --destination docs --recurse",
+    "build": "npx webpack-cli"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tro95/Pardus-Flight-Computer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Tro95/Pardus-Flight-Computer/issues"
+  },
+  "homepage": "https://github.com/Tro95/Pardus-Flight-Computer#readme",
+  "dependencies": {
+    "pardus-library": "github:tro95/pardus-library",
+    "pardus-options-library": "github:tro95/pardus-options-library"
+  }
+}

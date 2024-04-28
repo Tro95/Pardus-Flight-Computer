@@ -628,10 +628,11 @@ class NavArea {
 
             for (const tile of this.navigatableTiles()) {
                 const path = this.getPathTo(tile);
-                const path_tile_ids = path.map(x => x.tile_id);
+                const pathTileIds = path.map(x => x.tile_id);
 
                 tile.addEventListener('click', () => {
-                    PardusOptionsUtility.setVariableValue('expected_route', path_tile_ids);
+                    // console.log()
+                    PardusOptionsUtility.setVariableValue('expected_route', pathTileIds);
                 });
             }
         }

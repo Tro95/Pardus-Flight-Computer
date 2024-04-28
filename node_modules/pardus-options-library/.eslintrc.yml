@@ -1,0 +1,41 @@
+env:
+  browser: true
+  es6: true
+  greasemonkey: true
+extends:
+  - airbnb-base
+globals:
+  Atomics: readonly
+  SharedArrayBuffer: readonly
+ignorePatterns:
+  - "dist/*.js"
+parserOptions:
+  ecmaVersion: 2018
+rules:
+  import/extensions:
+    - error
+    - js: always
+      json: never
+  import/no-cycle:
+    - off
+  indent:
+    - error
+    - 4
+    - SwitchCase: 1
+  max-len:
+    - off
+  wrap-iife:
+    - 2
+    - inside
+  no-console:
+    - off
+  max-classes-per-file:
+    - off
+  spaced-comment:
+    - off
+  class-methods-use-this:
+    - off
+  no-restricted-syntax:
+    - off
+  no-use-before-define:
+    - off

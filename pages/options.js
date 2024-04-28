@@ -1,6 +1,8 @@
+import { PardusOptions, PardusOptionsUtility } from 'pardus-options-library';
+
 /* global PardusOptions, PardusOptionsUtility, colours, mapper_urls_from_route */
 
-class OptionsPage {
+export default class OptionsPage {
 
     constructor() {
         this.pardus_flight_computer_tab = PardusOptions.addTab({
