@@ -1515,7 +1515,7 @@ class MainPage {
 
             if (!modifyRoute) {
                 MsgFramePage.sendMessage('Modifying route', 'info');
-                PardusOptionsUtility.setVariableValue(`modified_route`, []);
+                PardusOptionsUtility.setVariableValue(`modified_route`, [this.navArea.centre_tile.tile_id]);
             } else {
                 const modified_route = PardusOptionsUtility.getVariableValue('modified_route', []);
 
