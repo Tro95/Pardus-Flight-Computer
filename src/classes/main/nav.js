@@ -352,7 +352,8 @@ export default class Nav {
                     this.tileMap.set(tileStr.toString(), this.defaultColour);
                 }
 
-                this.navArea.refreshTilesToHighlight(this.tileMap);
+                this.navArea.clearTilesHighlights();
+                this.navArea.addTilesHighlight(this.tileMap);
 
                 Msgframe.sendMessage('Saving route', 'info');
             }

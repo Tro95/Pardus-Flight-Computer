@@ -152,7 +152,21 @@ export default class NavigationOptions {
     #refreshShipEquipment() {
         return this.#fetchPardusPage('overview_ship.php').then((dom) => {
             const tables = dom.querySelectorAll('.messagestyle');
-            const driveTd = tables[0].querySelector(' tr:nth-of-type(21) td:nth-of-type(2)');
+            const shipTable = tables[0];
+
+            let driveRow;
+
+            for (const shipRow of shipTable.rows) {
+                if (shipRow.cells[0].innerText == 'Drive:') {
+                    driveRow = shipRow;
+                }
+            }
+
+            if (!driveRow) {
+                throw new Error('Failed to identify the row of the ship\'s drive.');
+            }
+
+            const driveTd = driveRow.querySelector('td:nth-of-type(2)');
             const driveImage = driveTd.children[0].src.split('/')[driveTd.children[0].src.split('/').length - 1];
             this.configuration.drive = this.driveMap.get(driveImage);
 
@@ -209,7 +223,8 @@ export default class NavigationOptions {
                         };
                         break;
                     default:
-                        throw new Error(`Unexpected equipment '${imageName}'!`);
+                        // This will trigger for literally all other equipment
+                        // throw new Error(`Unexpected equipment '${imageName}'!`);
                 }
             }
         });

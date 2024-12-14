@@ -23,10 +23,10 @@ export default class Ship2OpponentCombat {
 
         const recordingMode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
 
-        console.log(`previousTileId: ${previousTileId}`);
-        console.log(`expectedRoute: ${expectedRoute}`);
-        console.log(`currentPosition: ${currentPosition}`);
-        console.log(`this.tileId: ${this.tileId}`);
+        // console.log(`previousTileId: ${previousTileId}`);
+        // console.log(`expectedRoute: ${expectedRoute}`);
+        // console.log(`currentPosition: ${currentPosition}`);
+        // console.log(`this.tileId: ${this.tileId}`);
 
         if (previousTileId !== -1 && previousTileId !== this.tileId) {
             if (PardusOptionsUtility.getVariableValue('recording', false)) {
@@ -48,7 +48,7 @@ export default class Ship2OpponentCombat {
                         badRecordedTiles.add(currentPosition);
                     }
                 }
-                console.log(`Setting bad_recorded_tiles to '${Array.from(badRecordedTiles)}'`);
+                // console.log(`Setting bad_recorded_tiles to '${Array.from(badRecordedTiles)}'`);
                 PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(badRecordedTiles));
                 PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recordedTiles));
             }
