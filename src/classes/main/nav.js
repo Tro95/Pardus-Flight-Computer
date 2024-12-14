@@ -305,7 +305,7 @@ export default class Nav {
 
             if (!modifyRoute) {
                 Msgframe.sendMessage('Modifying route', 'info');
-                PardusOptionsUtility.setVariableValue('modified_route', []);
+                PardusOptionsUtility.setVariableValue('modified_route', [this.navArea.centreTile.id]);
             } else {
                 const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
