@@ -157,7 +157,7 @@ export default class NavigationOptions {
             let driveRow;
 
             for (const shipRow of shipTable.rows) {
-                if (shipRow.cells[0].innerText == 'Drive:') {
+                if (shipRow.cells[0].innerText === 'Drive:') {
                     driveRow = shipRow;
                 }
             }
