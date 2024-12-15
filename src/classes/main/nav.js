@@ -35,12 +35,9 @@ export default class Nav {
 
         this.#partialRefresh();
         this.navArea.addAfterRefreshHook(() => { this.#partialRefresh(); });
-        // this.navArea.refresh();
     }
 
     #partialRefresh() {
-        // console.log('Partial refresh called');
-        // console.trace();
         this.navArea.addTilesHighlight(this.tileMap);
         if (!this.isSquad) {
             this.#addRecording();
@@ -165,32 +162,32 @@ export default class Nav {
             PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(badRecordedTiles));
             PardusOptionsUtility.setVariableValue('modified_route', modifiedRoute);
             PardusOptionsUtility.setVariableValue('expected_route', []);
+        }
 
-            for (const tile of this.navArea.navigatableTiles()) {
-                const path = this.navArea.getPathTo(tile);
-                const pathTileIds = path.map((x) => x.id);
+        for (const tile of this.navArea.navigatableTiles()) {
+            const path = this.navArea.getPathTo(tile);
+            const pathTileIds = path.map((x) => x.id);
 
-                const listener = () => {
+            const listener = () => {
+                const recording = PardusOptionsUtility.getVariableValue('recording', false);
+                const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false);
+
+                if (recording || modifyRouteRecording) {
                     console.log(`pathTileIds: ${pathTileIds}`);
                     PardusOptionsUtility.setVariableValue('expected_route', pathTileIds);
                     console.log(`expected_route: ${PardusOptionsUtility.getVariableValue('expected_route', [])}`);
                 }
-
-                tile.addEventListener('click', listener, {
-                    nonce: `recording_${tile.id}`
-                });
             }
+
+            tile.addEventListener('click', listener, {
+                nonce: `recording_${tile.id}`
+            });
         }
 
         if (currentPosition) {
             PardusOptionsUtility.setVariableValue('last_tile_id', currentPosition);
         }
     }
-
-    // #setExpectedRoute(clickEvent) {
-    //     console.log(pathTileIds);
-    //     PardusOptionsUtility.setVariableValue('expected_route', pathTileIds);
-    // }
 
     fly() {
         if (PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false)) {
