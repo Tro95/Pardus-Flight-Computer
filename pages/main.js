@@ -959,8 +959,6 @@ class NavigationOptions {
             this._refreshCrew(),
         ]).then(() => {
             this.saveConfiguration();
-        }).then(() => {
-            this.reloadHtml();
         });
     }
 
@@ -1012,7 +1010,20 @@ class NavigationOptions {
     _refreshShipEquipment() {
         return this._fetchPardusPage('overview_ship.php').then((dom) => {
             const tables = dom.querySelectorAll('.messagestyle');
-            const driveTd = tables[0].querySelector(' tr:nth-of-type(21) td:nth-of-type(2)');
+            const equipmentTable = tables[0];
+
+            let driveTd = null;
+
+            for (const row of equipmentTable.rows) {
+                if (row.cells[0].innerText.startsWith('Drive')) {
+                    driveTd = row.cells[1];
+                }
+            }
+
+            if (!driveTd) {
+                throw new Error('Failed to find the drive row!');
+            }
+
             const driveImage = driveTd.children[0].src.split('/')[driveTd.children[0].src.split('/').length - 1];
             this.configuration.drive = this.driveMap.get(driveImage);
 
@@ -1201,10 +1212,10 @@ class NavigationOptions {
             button.setAttribute('disabled', 'true');
             button.value = 'Refreshing...';
             button.setAttribute('style', 'text-align: center; color: green; background-color: silver');
-            this.refreshOptions().finally(() => {
-                button.removeAttribute('disabled');
-                button.value = 'Plot route';
-                button.setAttribute('style', 'text-align: center;'); 
+            this.refreshOptions().catch((error) => {
+                console.log(error);
+            }).finally(() => {
+                this.reloadHtml();
             });
         });
     }
@@ -1443,7 +1454,7 @@ class NavigationCalculatorPopup {
             display: 'none',
         });
 
-        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr style='height: 50px;'><td style='text-align: center;'><label for='sector'>Sector: </label>${this._getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationFavourites}</td><td id='navigation-ship-equipment' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;padding-top:20px;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
+        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr style='height: 50px;'><td style='text-align: center;'><label for='select-sector'>Sector: </label>${this._getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationFavourites}</td><td id='navigation-ship-equipment' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;padding-top:20px;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
 
         document.body.appendChild(this.element);
         document.getElementById('close-navigation-calculator-popup').addEventListener('click', () => {
@@ -1505,7 +1516,7 @@ class MainPage {
 
             if (!modifyRoute) {
                 MsgFramePage.sendMessage('Modifying route', 'info');
-                PardusOptionsUtility.setVariableValue(`modified_route`, []);
+                PardusOptionsUtility.setVariableValue(`modified_route`, [this.navArea.centre_tile.tile_id]);
             } else {
                 const modified_route = PardusOptionsUtility.getVariableValue('modified_route', []);
 
@@ -1619,7 +1630,6 @@ class MainPage {
         document.addPardusKeyDownListener('open_navigation_key', {code: 68}, (event) => {
             if (!this.navigationCalculatorPopup.isVisible()) {
                 this.navigationCalculatorPopup.show();
-                console.log(this.navArea);
                 event.preventDefault();
             }
         });
