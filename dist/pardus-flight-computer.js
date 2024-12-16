@@ -4760,7 +4760,21 @@ class NavigationOptions {
     #refreshShipEquipment() {
         return this.#fetchPardusPage('overview_ship.php').then((dom) => {
             const tables = dom.querySelectorAll('.messagestyle');
-            const driveTd = tables[0].querySelector(' tr:nth-of-type(21) td:nth-of-type(2)');
+            const shipTable = tables[0];
+
+            let driveRow;
+
+            for (const shipRow of shipTable.rows) {
+                if (shipRow.cells[0].innerText === 'Drive:') {
+                    driveRow = shipRow;
+                }
+            }
+
+            if (!driveRow) {
+                throw new Error('Failed to identify the row of the ship\'s drive.');
+            }
+
+            const driveTd = driveRow.querySelector('td:nth-of-type(2)');
             const driveImage = driveTd.children[0].src.split('/')[driveTd.children[0].src.split('/').length - 1];
             this.configuration.drive = this.driveMap.get(driveImage);
 
@@ -4817,7 +4831,8 @@ class NavigationOptions {
                         };
                         break;
                     default:
-                        throw new Error(`Unexpected equipment '${imageName}'!`);
+                        // This will trigger for literally all other equipment
+                        // throw new Error(`Unexpected equipment '${imageName}'!`);
                 }
             }
         });
@@ -5073,7 +5088,7 @@ class NavigationCalculatorPopup {
             display: 'none',
         });
 
-        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr style='height: 50px;'><td style='text-align: center;'><label for='sector'>Sector: </label>${this.#getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationFavourites}</td><td id='navigation-ship-equipment' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;padding-top:20px;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
+        this.element.innerHTML = `<table style='width: inherit;'><tbody><tr><th colspan='2'>Navigate to destination</th></tr><tr style='height: 50px;'><td style='text-align: center;'><label for='select-sector'>Sector: </label>${this.#getSectorSelectHtml('sector')}</td><td style='text-align: center;'><label for='target-x'>x: <input id='target-x' type='number' min=0 max=100 maxlength=3 size=3/> <label for='target-y'>y: <input id='target-y' type='number' min=0 max=100 maxlength=3 size=3/></td></tr><tr><td id='destination-favourites' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationFavourites}</td><td id='navigation-ship-equipment' style='width: 50%;padding: 5px;border-style: dotted;border-color: gray;border-width: thin;'>${this.navigationOptions.getHtml()}</td></tr><tr><td colspan='2' style='text-align: center;padding-top:20px;'><input type='submit' id='navigate-to-destination' value='Plot route'/></td></tr><tr><td colspan='2' style='text-align: right;'><input type='submit' id='close-navigation-calculator-popup' value='Cancel'/></td></tr></tbody></table>`;
 
         document.body.appendChild(this.element);
         document.getElementById('close-navigation-calculator-popup').addEventListener('click', () => {
@@ -5128,12 +5143,9 @@ class Nav {
 
         this.#partialRefresh();
         this.navArea.addAfterRefreshHook(() => { this.#partialRefresh(); });
-        // this.navArea.refresh();
     }
 
     #partialRefresh() {
-        // console.log('Partial refresh called');
-        // console.trace();
         this.navArea.addTilesHighlight(this.tileMap);
         if (!this.isSquad) {
             this.#addRecording();
@@ -5178,7 +5190,7 @@ class Nav {
                     }
                 }
             }, {
-                nonce: `path_finding_mouseenter_${tile.id}`
+                nonce: `path_finding_mouseenter_${tile.id}`,
             });
 
             tile.addEventListener('mouseleave', () => {
@@ -5191,7 +5203,7 @@ class Nav {
                     pathTile.path_highlighted = false;
                 }
             }, {
-                nonce: `path_finding_mouseleave_${tile.id}`
+                nonce: `path_finding_mouseleave_${tile.id}`,
             });
 
             if (tile.element.querySelector(':hover')) {
@@ -5214,6 +5226,7 @@ class Nav {
 
         if (recording) {
             Msgframe.sendMessage('Recording stopped', 'info');
+            PardusOptionsUtility.setVariableValue('expected_route', []);
         } else {
             Msgframe.sendMessage('Recording started', 'info');
         }
@@ -5257,33 +5270,39 @@ class Nav {
             PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recordedTiles));
             PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(badRecordedTiles));
             PardusOptionsUtility.setVariableValue('modified_route', modifiedRoute);
-            PardusOptionsUtility.setVariableValue('expected_route', []);
-
-            for (const tile of this.navArea.navigatableTiles()) {
-                const path = this.navArea.getPathTo(tile);
-                const pathTileIds = path.map((x) => x.id);
-
-                const listener = () => {
-                    console.log(`pathTileIds: ${pathTileIds}`);
-                    PardusOptionsUtility.setVariableValue('expected_route', pathTileIds);
-                    console.log(`expected_route: ${PardusOptionsUtility.getVariableValue('expected_route', [])}`);
-                }
-
-                tile.addEventListener('click', listener, {
-                    nonce: `recording_${tile.id}`
-                });
-            }
+            // PardusOptionsUtility.setVariableValue('expected_route', []);
         }
 
-        if (currentPosition) {
-            PardusOptionsUtility.setVariableValue('last_tile_id', currentPosition);
-        }
+        this.#addRecordingListener();
     }
 
-    // #setExpectedRoute(clickEvent) {
-    //     console.log(pathTileIds);
-    //     PardusOptionsUtility.setVariableValue('expected_route', pathTileIds);
-    // }
+    #addRecordingListener() {
+        for (const tile of this.navArea.navigatableTiles()) {
+            const path = this.navArea.getPathTo(tile);
+            const pathTileIds = path.map((x) => x.id);
+
+            const listener = () => {
+                const currentPosition = userloc.toString();
+                const recording = PardusOptionsUtility.getVariableValue('recording', false);
+                const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false);
+
+                if (recording || modifyRouteRecording) {
+                    // console.log(`pathTileIds: ${pathTileIds}`);
+                    PardusOptionsUtility.setVariableValue('expected_route', pathTileIds);
+
+                    if (currentPosition) {
+                        PardusOptionsUtility.setVariableValue('last_tile_id', currentPosition);
+                    }
+
+                    // console.log(`expectedRoute: ${PardusOptionsUtility.getVariableValue('expected_route', [])}`);
+                }
+            };
+
+            tile.addEventListener('click', listener, {
+                nonce: `recording_${tile.id}`,
+            });
+        }
+    }
 
     fly() {
         if (PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false)) {
@@ -5398,7 +5417,7 @@ class Nav {
 
             if (!modifyRoute) {
                 Msgframe.sendMessage('Modifying route', 'info');
-                PardusOptionsUtility.setVariableValue('modified_route', []);
+                PardusOptionsUtility.setVariableValue('modified_route', [this.navArea.centreTile.id]);
             } else {
                 const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
@@ -5445,7 +5464,9 @@ class Nav {
                     this.tileMap.set(tileStr.toString(), this.defaultColour);
                 }
 
-                this.navArea.refreshTilesToHighlight(this.tileMap);
+                this.navArea.clearTilesHighlights();
+                this.navArea.addTilesHighlight(this.tileMap);
+                this.#highlightRecordedTiles();
 
                 Msgframe.sendMessage('Saving route', 'info');
             }
@@ -5493,7 +5514,9 @@ class Nav {
                 this.tileMap.set(tileStr.toString(), this.defaultColour);
             }
 
+            this.navArea.clearTilesHighlights();
             this.navArea.addTilesHighlight(this.tileMap);
+            this.#highlightRecordedTiles();
         }).catch(() => {
             Msgframe.sendMessage('Unable to get route to destination', 'error');
         }).finally(() => {
@@ -6164,15 +6187,18 @@ class Ship2OpponentCombat {
 
         const recordingMode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
 
-        console.log(`previousTileId: ${previousTileId}`);
-        console.log(`expectedRoute: ${expectedRoute}`);
-        console.log(`currentPosition: ${currentPosition}`);
-        console.log(`this.tileId: ${this.tileId}`);
+        // console.log(`previousTileId: ${previousTileId}`);
+        // console.log(`expectedRoute: ${expectedRoute}`);
+        // console.log(`currentPosition: ${currentPosition}`);
+        // console.log(`this.tileId: ${this.tileId}`);
 
-        if (previousTileId !== -1 && previousTileId !== this.tileId) {
+        if (previousTileId !== -1) {
             if (PardusOptionsUtility.getVariableValue('recording', false)) {
                 const recordedTiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
                 const badRecordedTiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
+
+                // console.log(`recordedTiles: ${recordedTiles}`);
+                // console.log(`badRecordedTiles: ${badRecordedTiles}`);
 
                 if (expectedRoute.includes(currentPosition)) {
                     for (const flownTile of expectedRoute) {
@@ -6181,15 +6207,20 @@ class Ship2OpponentCombat {
                         }
 
                         if (recordingMode === 'all' || recordingMode === 'good') {
+                            // console.log(`Adding ${flownTile} to recordedTiles`)
                             recordedTiles.add(flownTile);
                         }
                     }
 
                     if (recordingMode === 'all' || recordingMode === 'bad') {
+                        // console.log(`Adding ${currentPosition} to badRecordedTiles`)
                         badRecordedTiles.add(currentPosition);
+
+                        // Make sure it isn't recorded as a good tile at the same time
+                        recordedTiles.delete(currentPosition);
                     }
                 }
-                console.log(`Setting bad_recorded_tiles to '${Array.from(badRecordedTiles)}'`);
+                // console.log(`Setting bad_recorded_tiles to '${Array.from(badRecordedTiles)}'`);
                 PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(badRecordedTiles));
                 PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recordedTiles));
             }
