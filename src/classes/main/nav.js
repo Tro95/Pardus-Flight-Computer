@@ -82,7 +82,7 @@ export default class Nav {
                     }
                 }
             }, {
-                nonce: `path_finding_mouseenter_${tile.id}`
+                nonce: `path_finding_mouseenter_${tile.id}`,
             });
 
             tile.addEventListener('mouseleave', () => {
@@ -95,7 +95,7 @@ export default class Nav {
                     pathTile.path_highlighted = false;
                 }
             }, {
-                nonce: `path_finding_mouseleave_${tile.id}`
+                nonce: `path_finding_mouseleave_${tile.id}`,
             });
 
             if (tile.element.querySelector(':hover')) {
@@ -165,6 +165,10 @@ export default class Nav {
             // PardusOptionsUtility.setVariableValue('expected_route', []);
         }
 
+        this.#addRecordingListener();
+    }
+
+    #addRecordingListener() {
         for (const tile of this.navArea.navigatableTiles()) {
             const path = this.navArea.getPathTo(tile);
             const pathTileIds = path.map((x) => x.id);
@@ -177,21 +181,19 @@ export default class Nav {
                 if (recording || modifyRouteRecording) {
                     // console.log(`pathTileIds: ${pathTileIds}`);
                     PardusOptionsUtility.setVariableValue('expected_route', pathTileIds);
-                    
+
                     if (currentPosition) {
                         PardusOptionsUtility.setVariableValue('last_tile_id', currentPosition);
                     }
 
                     // console.log(`expectedRoute: ${PardusOptionsUtility.getVariableValue('expected_route', [])}`);
                 }
-            }
+            };
 
             tile.addEventListener('click', listener, {
-                nonce: `recording_${tile.id}`
+                nonce: `recording_${tile.id}`,
             });
         }
-
-
     }
 
     fly() {
