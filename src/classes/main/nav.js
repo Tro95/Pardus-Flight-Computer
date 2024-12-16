@@ -118,6 +118,7 @@ export default class Nav {
 
         if (recording) {
             Msgframe.sendMessage('Recording stopped', 'info');
+            PardusOptionsUtility.setVariableValue('expected_route', []);
         } else {
             Msgframe.sendMessage('Recording started', 'info');
         }
@@ -161,7 +162,7 @@ export default class Nav {
             PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recordedTiles));
             PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(badRecordedTiles));
             PardusOptionsUtility.setVariableValue('modified_route', modifiedRoute);
-            PardusOptionsUtility.setVariableValue('expected_route', []);
+            // PardusOptionsUtility.setVariableValue('expected_route', []);
         }
 
         for (const tile of this.navArea.navigatableTiles()) {
@@ -169,13 +170,19 @@ export default class Nav {
             const pathTileIds = path.map((x) => x.id);
 
             const listener = () => {
+                const currentPosition = userloc.toString();
                 const recording = PardusOptionsUtility.getVariableValue('recording', false);
                 const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false);
 
                 if (recording || modifyRouteRecording) {
-                    console.log(`pathTileIds: ${pathTileIds}`);
+                    // console.log(`pathTileIds: ${pathTileIds}`);
                     PardusOptionsUtility.setVariableValue('expected_route', pathTileIds);
-                    console.log(`expected_route: ${PardusOptionsUtility.getVariableValue('expected_route', [])}`);
+                    
+                    if (currentPosition) {
+                        PardusOptionsUtility.setVariableValue('last_tile_id', currentPosition);
+                    }
+
+                    // console.log(`expectedRoute: ${PardusOptionsUtility.getVariableValue('expected_route', [])}`);
                 }
             }
 
@@ -184,9 +191,7 @@ export default class Nav {
             });
         }
 
-        if (currentPosition) {
-            PardusOptionsUtility.setVariableValue('last_tile_id', currentPosition);
-        }
+
     }
 
     fly() {
@@ -351,6 +356,7 @@ export default class Nav {
 
                 this.navArea.clearTilesHighlights();
                 this.navArea.addTilesHighlight(this.tileMap);
+                this.#highlightRecordedTiles();
 
                 Msgframe.sendMessage('Saving route', 'info');
             }
@@ -398,7 +404,9 @@ export default class Nav {
                 this.tileMap.set(tileStr.toString(), this.defaultColour);
             }
 
+            this.navArea.clearTilesHighlights();
             this.navArea.addTilesHighlight(this.tileMap);
+            this.#highlightRecordedTiles();
         }).catch(() => {
             Msgframe.sendMessage('Unable to get route to destination', 'error');
         }).finally(() => {

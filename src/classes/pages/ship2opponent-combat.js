@@ -28,10 +28,13 @@ export default class Ship2OpponentCombat {
         // console.log(`currentPosition: ${currentPosition}`);
         // console.log(`this.tileId: ${this.tileId}`);
 
-        if (previousTileId !== -1 && previousTileId !== this.tileId) {
+        if (previousTileId !== -1) {
             if (PardusOptionsUtility.getVariableValue('recording', false)) {
                 const recordedTiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
                 const badRecordedTiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
+
+                // console.log(`recordedTiles: ${recordedTiles}`);
+                // console.log(`badRecordedTiles: ${badRecordedTiles}`);
 
                 if (expectedRoute.includes(currentPosition)) {
                     for (const flownTile of expectedRoute) {
@@ -40,12 +43,17 @@ export default class Ship2OpponentCombat {
                         }
 
                         if (recordingMode === 'all' || recordingMode === 'good') {
+                            // console.log(`Adding ${flownTile} to recordedTiles`)
                             recordedTiles.add(flownTile);
                         }
                     }
 
                     if (recordingMode === 'all' || recordingMode === 'bad') {
+                        // console.log(`Adding ${currentPosition} to badRecordedTiles`)
                         badRecordedTiles.add(currentPosition);
+
+                        // Make sure it isn't recorded as a good tile at the same time
+                        recordedTiles.delete(currentPosition);
                     }
                 }
                 // console.log(`Setting bad_recorded_tiles to '${Array.from(badRecordedTiles)}'`);
