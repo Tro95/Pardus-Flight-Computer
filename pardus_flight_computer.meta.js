@@ -11,7 +11,7 @@
 // @match           http*://*.pardus.at/options.php
 // @grant           GM_setValue
 // @grant           GM_getValue
-// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/refs/heads/new/dist/pardus_flight_computer.js
+// @require         https://raw.githubusercontent.com/Tro95/Pardus-Flight-Computer/refs/heads/new/dist/pardus-flight-computer.js
 // @downloadURL     https://github.com/Tro95/Pardus-Flight-Computer/raw/refs/heads/new/pardus_flight_computer.user.js
 // @updateURL       https://github.com/Tro95/Pardus-Flight-Computer/raw/refs/heads/new/pardus_flight_computer.meta.js
 // ==/UserScript==
