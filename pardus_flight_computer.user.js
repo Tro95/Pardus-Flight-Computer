@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Pardus Flight Computer
-// @version         1.0.0
+// @version         1.0.1
 // @description     Flight Computer to assist pathfinding in Pardus
 // @author          Tro (Artemis)
 // @icon            https://static.pardus.at/img/std/equipment/drive_interphased_enhanced.png
