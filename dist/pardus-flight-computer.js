@@ -149,9 +149,10 @@ class Tile {
             // Get the tile id
             if (this.element.classList.contains('navShip') && this.element.querySelector('#thisShip')) {
                 this.#tile_id = this.getUserloc();
-            } else if (this.element.children.length > 0 && this.element.children[0].tagName === 'A') {
+            } else if (this.element.children.length > 0 && this.element.querySelector('A')) {
 
-                const child_element = this.element.children[0];
+                // In order to support blue stims, we have to use querySelector to handle the extra <div>
+                const child_element = this.element.querySelector('A');
 
                 // Can we navigate to the tile?
                 if ((!child_element.hasAttribute('onclick') || child_element.getAttribute('onclick').startsWith('warp')) && (!child_element.hasAttribute('_onclick') || child_element.getAttribute('_onclick').startsWith('warp'))) {
@@ -244,11 +245,11 @@ class Tile {
     }
 
     isNavigatable() {
-        if (!this.isVirtualTile() && this.element && this.element.children.length > 0 && this.element.children[0].getAttribute('onclick') && this.element.children[0].getAttribute('onclick').startsWith('nav') && this.isClickable()) {
+        if (!this.isVirtualTile() && this.element && this.element.children.length > 0 && this.element.querySelector('A')?.getAttribute('onclick') && this.element.querySelector('A')?.getAttribute('onclick').startsWith('nav') && this.isClickable()) {
             return true;
         }
 
-        if (!this.isVirtualTile() && this.element && this.element.children.length > 0 && this.element.children[0].getAttribute('_onclick') && this.element.children[0].getAttribute('_onclick').startsWith('nav') && this.isClickable()) {
+        if (!this.isVirtualTile() && this.element && this.element.children.length > 0 && this.element.querySelector('A')?.getAttribute('_onclick') && this.element.querySelector('A')?.getAttribute('_onclick').startsWith('nav') && this.isClickable()) {
             return true;
         }
 
@@ -275,7 +276,7 @@ class Tile {
         }
 
         if (this.isNavigatable()) {
-            this.element.children[0].addEventListener(event, func, options);
+            this.element.querySelector('A').addEventListener(event, func, options);
 
             if (options.hasOwnProperty('nonce')) {
                 this.#listenerNonce.add(options.nonce);
@@ -1021,6 +1022,11 @@ class NavArea {
         for (const tile of this.clickableTiles()) {
             tile.clearHighlight();
         }
+    }
+
+    refreshTilesToHighlight(tiles_to_highlight) {
+        this.tiles_to_highlight = tiles_to_highlight;
+        this.reload(true);
     }
 
     refresh() {
