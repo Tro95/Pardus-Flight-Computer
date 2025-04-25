@@ -146,6 +146,18 @@ class Tile {
                 this.objectType = 'building';
             }
 
+            if (this.element.classList.contains('navWormhole')) {
+                this.type = 'wormhole';
+            }
+
+            if (this.element.classList.contains('navYhole')) {
+                this.type = 'y-hole';
+            }
+
+            if (this.element.classList.contains('navXhole')) {
+                this.type = 'x-hole';
+            }
+
             // Get the tile id
             if (this.element.classList.contains('navShip') && this.element.querySelector('#thisShip')) {
                 this.#tile_id = this.getUserloc();
@@ -157,20 +169,8 @@ class Tile {
                 // Can we navigate to the tile?
                 if ((!child_element.hasAttribute('onclick') || child_element.getAttribute('onclick').startsWith('warp')) && (!child_element.hasAttribute('_onclick') || child_element.getAttribute('_onclick').startsWith('warp'))) {
                     this.#tile_id = this.getUserloc();
-
-                    if ((child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('warp')) || (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('warp'))) {
-                        this.type = 'wormhole';
-                    }
                 } else if (child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('nav')) {
                     this.#tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
-
-                    if (this.element.classList.contains('navYhole')) {
-                        this.type = 'y-hole';
-                    }
-
-                    if (this.element.classList.contains('navXhole')) {
-                        this.type = 'x-hole';
-                    }
                 } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('nav')) {
                     // Freeze Frame compatibility
                     this.#tile_id = child_element.getAttribute('_onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
