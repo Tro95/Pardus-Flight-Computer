@@ -14,6 +14,22 @@ export default class Ship2OpponentCombat {
 
         this.tileId = matchedTileId;
         this.#addRecording();
+        this.#addRetreatHandler();
+    }
+
+    #addRetreatHandler() {
+        document.getElementsByName('retreat')[0].addEventListener('click', () => { this.#retreatHandler() });
+    }
+
+    #retreatHandler() {
+        const currentPosition = userloc.toString();
+        const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`modify_route`, false);
+        const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
+
+        if (modifyRouteRecording && (modifiedRoute[modifiedRoute.length - 1] === currentPosition)) {
+            modifiedRoute.pop();
+            PardusOptionsUtility.setVariableValue('modified_route', modifiedRoute);
+        }
     }
 
     #addRecording() {
@@ -22,6 +38,8 @@ export default class Ship2OpponentCombat {
         const currentPosition = userloc.toString();
 
         const recordingMode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
+        const recording = PardusOptionsUtility.getVariableValue('recording', false);
+        const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`modify_route`, false);
 
         // console.log(`previousTileId: ${previousTileId}`);
         // console.log(`expectedRoute: ${expectedRoute}`);
@@ -29,9 +47,10 @@ export default class Ship2OpponentCombat {
         // console.log(`this.tileId: ${this.tileId}`);
 
         if (previousTileId !== -1) {
-            if (PardusOptionsUtility.getVariableValue('recording', false)) {
+            if (recording || modifyRouteRecording) {
                 const recordedTiles = new Set(PardusOptionsUtility.getVariableValue('recorded_tiles', []));
                 const badRecordedTiles = new Set(PardusOptionsUtility.getVariableValue('bad_recorded_tiles', []));
+                const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
                 // console.log(`recordedTiles: ${recordedTiles}`);
                 // console.log(`badRecordedTiles: ${badRecordedTiles}`);
@@ -42,13 +61,19 @@ export default class Ship2OpponentCombat {
                             break;
                         }
 
-                        if (recordingMode === 'all' || recordingMode === 'good') {
+                        if (recording && (recordingMode === 'all' || recordingMode === 'good')) {
                             // console.log(`Adding ${flownTile} to recordedTiles`)
                             recordedTiles.add(flownTile);
                         }
+
+                        // If we are modifying the route, check to see if we've already added the tile
+                        // (which may happen using partial refresh), and if not, add it.
+                        if (modifyRouteRecording && !modifiedRoute.includes(flownTile)) {
+                            modifiedRoute.push(flownTile);
+                        }
                     }
 
-                    if (recordingMode === 'all' || recordingMode === 'bad') {
+                    if (recording && (recordingMode === 'all' || recordingMode === 'bad')) {
                         // console.log(`Adding ${currentPosition} to badRecordedTiles`)
                         badRecordedTiles.add(currentPosition);
 
@@ -59,6 +84,7 @@ export default class Ship2OpponentCombat {
                 // console.log(`Setting bad_recorded_tiles to '${Array.from(badRecordedTiles)}'`);
                 PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(badRecordedTiles));
                 PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recordedTiles));
+                PardusOptionsUtility.setVariableValue('modified_route', modifiedRoute);
             }
         }
 
