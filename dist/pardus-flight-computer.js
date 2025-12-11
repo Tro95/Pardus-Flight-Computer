@@ -5001,11 +5001,13 @@ class NavigationOptions {
 class NavigationCalculatorPopup {
     constructor(options = {
         squad: false,
+        apCalculatorBaseUrl: 'https://pardusapcalculator.uk',
     }) {
         this.isSquad = options.squad;
         this.id = 'pardus-flight-computer-navigation-calculator-popup';
         this.navigationOptions = new NavigationOptions(options);
         this.navigationFavourites = new NavigationFavourites();
+        this.apCalculatorBaseUrl = options.apCalculatorBaseUrl || 'https://pardusapcalculator.uk';
 
         if (document.getElementById(this.id)) {
             this.element = document.getElementById(this.id);
@@ -5060,10 +5062,9 @@ class NavigationCalculatorPopup {
     }
 
     #getRouteTo(waypoints = []) {
-        const url = 'https://pardusapcalculator.uk';
         const options = this.navigationOptions.getOptions();
 
-        return fetch(`${url}/route?${new URLSearchParams({
+        return fetch(`${this.apCalculatorBaseUrl}/route?${new URLSearchParams({
             waypoints: waypoints.join(','),
             options: encodeURIComponent(JSON.stringify(options)),
         })}`).then((response) => {
@@ -5117,8 +5118,6 @@ class NavigationCalculatorPopup {
 
 
 
-/* global userloc */
-
 class Nav {
     #recordingListeners = new Map();
 
@@ -5126,6 +5125,7 @@ class Nav {
         this.navArea = navArea;
         this.optionsPrefix = optionsPrefix;
         this.isSquad = isSquad;
+        this.apCalculatorBaseUrl = PardusOptionsUtility.getVariableValue('ap_calculator_base_url', 'https://pardusapcalculator.uk');
 
         this.tileString = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
         this.defaultColour = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}default_colour`, 'g');
@@ -5143,7 +5143,7 @@ class Nav {
         }
 
         this.#addAutopilot();
-        this.#addNavigationCalculatorPopup(optionsPrefix);
+        this.#addNavigationCalculatorPopup();
 
         document.addPardusKeyDownListener('toggle_recording_keypress', { code: 82 }, this.#addRecordingToggleHander);
 
@@ -5533,7 +5533,10 @@ class Nav {
     }
 
     #addNavigationCalculatorPopup() {
-        this.navigationCalculatorPopup = new NavigationCalculatorPopup({ squad: this.isSquad });
+        this.navigationCalculatorPopup = new NavigationCalculatorPopup({
+            squad: this.isSquad,
+            apCalculatorBaseUrl: this.apCalculatorBaseUrl,
+        });
 
         document.addPardusKeyDownListener('open_navigation_key', { code: 68 }, (keyEvent) => {
             if (!this.navigationCalculatorPopup.isVisible()) {
@@ -6171,8 +6174,6 @@ class OptionsPage {
 
 
 
-/* global userloc */
-
 class Ship2OpponentCombat {
     #extractRegex = /([\w\-\d\s]*)\s\[(\d{1,3}),(\d{1,3})\]/;
 
@@ -6188,12 +6189,12 @@ class Ship2OpponentCombat {
     }
 
     #addRetreatHandler() {
-        document.getElementsByName('retreat')[0].addEventListener('click', () => { this.#retreatHandler() });
+        document.getElementsByName('retreat')[0].addEventListener('click', () => { this.#retreatHandler(); });
     }
 
     #retreatHandler() {
         const currentPosition = userloc.toString();
-        const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`modify_route`, false);
+        const modifyRouteRecording = PardusOptionsUtility.getVariableValue('modify_route', false);
         const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
         if (modifyRouteRecording && (modifiedRoute[modifiedRoute.length - 1] === currentPosition)) {
@@ -6209,7 +6210,7 @@ class Ship2OpponentCombat {
 
         const recordingMode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
         const recording = PardusOptionsUtility.getVariableValue('recording', false);
-        const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`modify_route`, false);
+        const modifyRouteRecording = PardusOptionsUtility.getVariableValue('modify_route', false);
 
         // console.log(`previousTileId: ${previousTileId}`);
         // console.log(`expectedRoute: ${expectedRoute}`);
