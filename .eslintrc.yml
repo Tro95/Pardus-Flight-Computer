@@ -7,6 +7,7 @@ extends:
 globals:
   Atomics: readonly
   SharedArrayBuffer: readonly
+  userloc: readonly
 ignorePatterns:
   - "dist/*.js"
 parserOptions:
