@@ -3,8 +3,6 @@ import { Sectors } from 'pardus-library';
 import { Msgframe } from '../pages/index.js';
 import NavigationCalculatorPopup from './navigation-calculator-popup.js';
 
-/* global userloc */
-
 export default class Nav {
     #recordingListeners = new Map();
 
@@ -12,6 +10,7 @@ export default class Nav {
         this.navArea = navArea;
         this.optionsPrefix = optionsPrefix;
         this.isSquad = isSquad;
+        this.apCalculatorBaseUrl = PardusOptionsUtility.getVariableValue('ap_calculator_base_url', 'https://pardusapcalculator.uk');
 
         this.tileString = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
         this.defaultColour = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}default_colour`, 'g');
@@ -29,7 +28,7 @@ export default class Nav {
         }
 
         this.#addAutopilot();
-        this.#addNavigationCalculatorPopup(optionsPrefix);
+        this.#addNavigationCalculatorPopup();
 
         document.addPardusKeyDownListener('toggle_recording_keypress', { code: 82 }, this.#addRecordingToggleHander);
 
@@ -419,7 +418,10 @@ export default class Nav {
     }
 
     #addNavigationCalculatorPopup() {
-        this.navigationCalculatorPopup = new NavigationCalculatorPopup({ squad: this.isSquad });
+        this.navigationCalculatorPopup = new NavigationCalculatorPopup({
+            squad: this.isSquad,
+            apCalculatorBaseUrl: this.apCalculatorBaseUrl,
+        });
 
         document.addPardusKeyDownListener('open_navigation_key', { code: 68 }, (keyEvent) => {
             if (!this.navigationCalculatorPopup.isVisible()) {

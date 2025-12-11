@@ -5,11 +5,13 @@ import NavigationOptions from './navigation-options.js';
 export default class NavigationCalculatorPopup {
     constructor(options = {
         squad: false,
+        apCalculatorBaseUrl: 'https://pardusapcalculator.uk',
     }) {
         this.isSquad = options.squad;
         this.id = 'pardus-flight-computer-navigation-calculator-popup';
         this.navigationOptions = new NavigationOptions(options);
         this.navigationFavourites = new NavigationFavourites();
+        this.apCalculatorBaseUrl = options.apCalculatorBaseUrl || 'https://pardusapcalculator.uk';
 
         if (document.getElementById(this.id)) {
             this.element = document.getElementById(this.id);
@@ -64,10 +66,9 @@ export default class NavigationCalculatorPopup {
     }
 
     #getRouteTo(waypoints = []) {
-        const url = 'https://pardusapcalculator.uk';
         const options = this.navigationOptions.getOptions();
 
-        return fetch(`${url}/route?${new URLSearchParams({
+        return fetch(`${this.apCalculatorBaseUrl}/route?${new URLSearchParams({
             waypoints: waypoints.join(','),
             options: encodeURIComponent(JSON.stringify(options)),
         })}`).then((response) => {

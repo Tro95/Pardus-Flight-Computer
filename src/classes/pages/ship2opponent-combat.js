@@ -1,8 +1,6 @@
 import { PardusOptionsUtility } from 'pardus-options-library';
 import { Sectors } from 'pardus-library';
 
-/* global userloc */
-
 export default class Ship2OpponentCombat {
     #extractRegex = /([\w\-\d\s]*)\s\[(\d{1,3}),(\d{1,3})\]/;
 
@@ -18,12 +16,12 @@ export default class Ship2OpponentCombat {
     }
 
     #addRetreatHandler() {
-        document.getElementsByName('retreat')[0].addEventListener('click', () => { this.#retreatHandler() });
+        document.getElementsByName('retreat')[0].addEventListener('click', () => { this.#retreatHandler(); });
     }
 
     #retreatHandler() {
         const currentPosition = userloc.toString();
-        const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`modify_route`, false);
+        const modifyRouteRecording = PardusOptionsUtility.getVariableValue('modify_route', false);
         const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
         if (modifyRouteRecording && (modifiedRoute[modifiedRoute.length - 1] === currentPosition)) {
@@ -39,7 +37,7 @@ export default class Ship2OpponentCombat {
 
         const recordingMode = PardusOptionsUtility.getVariableValue('recording_mode', 'all');
         const recording = PardusOptionsUtility.getVariableValue('recording', false);
-        const modifyRouteRecording = PardusOptionsUtility.getVariableValue(`modify_route`, false);
+        const modifyRouteRecording = PardusOptionsUtility.getVariableValue('modify_route', false);
 
         // console.log(`previousTileId: ${previousTileId}`);
         // console.log(`expectedRoute: ${expectedRoute}`);
