@@ -312,6 +312,9 @@ export default class Nav {
             if (!modifyRoute) {
                 Msgframe.sendMessage('Modifying route', 'info');
                 PardusOptionsUtility.setVariableValue('modified_route', [this.navArea.centreTile.id]);
+                // Clear any pending expected_route from the prior flight to prevent
+                // a delayed #addRecording() call from corrupting modified_route
+                PardusOptionsUtility.setVariableValue('expected_route', []);
             } else {
                 const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
