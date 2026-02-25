@@ -14,7 +14,7 @@ A Tampermonkey userscript (Flight Computer) for the browser MMO [Pardus](https:/
 
 ## Development Guide
 
-To create an updated version of the script, make sure all changes in `src/` are already committed. Now decide the version number, prepending 'v' to it (e.g., v1, v2.4, v3.5.2), following major, minor, and bug fix version numbers. Then run the build command to update the `dist/` assets, update the version numbers in `pardus_flight_computer.meta.js` and `pardus_flight_computer.user.js`, update the version number reference to the `dist/` assets in `pardus_flight_computer.meta.js` and `pardus_flight_computer.user.js`, before committing it with the comment being the version number with its prepended 'v'. Then `git tag` the commit with the version number. Pushing the update involves pushing both the commit and the tag upstream at the same time. 
+To create an updated version of the script, make sure all changes in `src/` are already committed. Now decide the version number, prepending 'v' to it (e.g., v1, v2.4, v3.5.2), following major, minor, and bug fix version numbers. Then run the build command to update the `dist/` assets, update the version numbers in `pardus_flight_computer.meta.js` and `pardus_flight_computer.user.js`, update the version number reference to the `dist/` assets in `pardus_flight_computer.meta.js` and `pardus_flight_computer.user.js`, before committing it with the comment being the version number with its prepended 'v'. Then create an annotated `git tag` for the commit with the version number (e.g., `git tag -a v1.1.2 -m "v1.1.2"`). Pushing the update involves pushing both the commit and the tag upstream at the same time. 
 
 ## Architecture
 
