@@ -5276,8 +5276,11 @@ class Nav {
             PardusOptionsUtility.setVariableValue('recorded_tiles', Array.from(recordedTiles));
             PardusOptionsUtility.setVariableValue('bad_recorded_tiles', Array.from(badRecordedTiles));
             PardusOptionsUtility.setVariableValue('modified_route', modifiedRoute);
-            // PardusOptionsUtility.setVariableValue('expected_route', []);
         }
+
+        // Always clear expected_route after reading it, to prevent
+        // stale routes from being re-processed by delayed gcFunc triggers
+        PardusOptionsUtility.setVariableValue('expected_route', []);
 
         this.#addRecordingListener();
     }
@@ -5424,6 +5427,9 @@ class Nav {
             if (!modifyRoute) {
                 Msgframe.sendMessage('Modifying route', 'info');
                 PardusOptionsUtility.setVariableValue('modified_route', [this.navArea.centreTile.id]);
+                // Clear any pending expected_route from the prior flight to prevent
+                // a delayed #addRecording() call from corrupting modified_route
+                PardusOptionsUtility.setVariableValue('expected_route', []);
             } else {
                 const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
