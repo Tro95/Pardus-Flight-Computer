@@ -35,6 +35,7 @@ export default defineConfig([
             "no-restricted-syntax": "off",
             "no-use-before-define": "off",
             "no-new": "off",
+            "no-undef": "error",
         },
     },
 ]);
