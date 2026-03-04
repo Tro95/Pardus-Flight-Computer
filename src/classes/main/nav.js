@@ -33,7 +33,9 @@ export default class Nav {
         document.addPardusKeyDownListener('toggle_recording_keypress', { code: 82 }, this.#addRecordingToggleHander);
 
         this.#partialRefresh();
-        this.navArea.addAfterRefreshHook(() => { this.#partialRefresh(); });
+        this.navArea.addAfterRefreshHook(() => {
+            this.#partialRefresh();
+        });
     }
 
     #partialRefresh() {
@@ -71,8 +73,8 @@ export default class Nav {
 
             tile.addEventListener('mouseenter', () => {
                 for (const pathTile of path) {
-                    if (!pathTile.path_highlighted) {
-                        pathTile.path_highlighted = true;
+                    if (!pathTile.pathHighlighted) {
+                        pathTile.pathHighlighted = true;
                         if (pathTile.isHighlighted()) {
                             pathTile.emphasiseHighlight();
                         } else {
@@ -91,7 +93,7 @@ export default class Nav {
                     } else {
                         pathTile.removeHighlight(PardusOptionsUtility.getVariableValue('default_path_colour', 'y'));
                     }
-                    pathTile.path_highlighted = false;
+                    pathTile.pathHighlighted = false;
                 }
             }, {
                 nonce: `path_finding_mouseleave_${tile.id}`,
@@ -99,8 +101,8 @@ export default class Nav {
 
             if (tile.element.querySelector(':hover')) {
                 for (const pathTile of path) {
-                    if (!pathTile.path_highlighted) {
-                        pathTile.path_highlighted = true;
+                    if (!pathTile.pathHighlighted) {
+                        pathTile.pathHighlighted = true;
                         if (pathTile.isHighlighted()) {
                             pathTile.emphasiseHighlight();
                         } else {
@@ -450,7 +452,11 @@ export default class Nav {
             }
         });
 
-        this.navigationCalculatorPopup.element.addPardusKeyDownListener('plot_key', { code: 13 }, (keyEvent) => { this.#plotPath(keyEvent); });
-        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', (keyEvent) => { this.#plotPath(keyEvent); });
+        this.navigationCalculatorPopup.element.addPardusKeyDownListener('plot_key', { code: 13 }, (keyEvent) => {
+            this.#plotPath(keyEvent);
+        });
+        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', (keyEvent) => {
+            this.#plotPath(keyEvent);
+        });
     }
 }

@@ -4,9 +4,9 @@
   "description": "Flight Computer to assist pathfinding in Pardus (https://pardus.at)",
   "main": "pardus_flight_computer.js",
   "devDependencies": {
-    "eslint": "^8.57.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.20.1",
+    "@stylistic/eslint-plugin": "^5.9.0",
+    "eslint": "^10.0.0",
+    "globals": "^16.1.0",
     "jsdoc": "^4.0.2",
     "terser-webpack-plugin": "^5.3.15",
     "webpack": "^5.48.0",
@@ -23,6 +23,7 @@
     "type": "git",
     "url": "git+https://github.com/Tro95/Pardus-Flight-Computer.git"
   },
+  "type": "module",
   "author": "",
   "license": "ISC",
   "bugs": {
@@ -30,7 +31,7 @@
   },
   "homepage": "https://github.com/Tro95/Pardus-Flight-Computer#readme",
   "dependencies": {
-    "pardus-library": "github:tro95/pardus-library",
-    "pardus-options-library": "github:tro95/pardus-options-library"
+    "pardus-library": "^1.1.0",
+    "pardus-options-library": "^2.7.0"
   }
 }

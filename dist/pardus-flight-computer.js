@@ -39,13 +39,13 @@ __webpack_require__.d(__webpack_exports__, {
   "default": () => (/* binding */ PardusFlightComputer)
 });
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/abstract/abstract-page.js
+;// ./node_modules/pardus-library/src/classes/abstract/abstract-page.js
 class AbstractPage {
     #page;
 
     constructor(pageName = '') {
         if (pageName === '') {
-            throw "Page is not defined for class";
+            throw new Error('Page is not defined for class');
         }
 
         this.#page = pageName;
@@ -64,78 +64,154 @@ class AbstractPage {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/main/tile.js
+;// ./node_modules/pardus-library/src/classes/abstract/refreshable.js
+class Refreshable {
+    #afterRefreshHooks = [];
+    #beforeRefreshHooks = [];
+
+    refresh() {
+        this.#beforeRefresh();
+        this._reload();
+        this.#afterRefresh();
+    }
+
+    /**
+     * Override in subclasses to re-parse DOM on refresh.
+     */
+    _reload() { }
+
+    /**
+     * Add a hook to run after the element is refreshed
+     * @param {function} func Function to call after the element is refreshed
+     */
+    addAfterRefreshHook(func) {
+        this.#afterRefreshHooks.push(func);
+    }
+
+    /**
+     * Add a hook to run before the element is refreshed
+     * @param {function} func Function to call before the element is refreshed
+     */
+    addBeforeRefreshHook(func) {
+        this.#beforeRefreshHooks.push(func);
+    }
+
+    addMutationObserver(mutationTarget = null, mutationConfiguration = {
+        attributes: false,
+        childList: true,
+        subtree: true,
+    }) {
+        if (!mutationTarget) {
+            throw new Error('No mutationTarget provided!');
+        }
+
+        const observer = new MutationObserver((mutationsList, obs) => {
+            this.mutationCallback(mutationsList, obs);
+        });
+
+        observer.observe(mutationTarget, mutationConfiguration);
+    }
+
+    /**
+     * Override in subclasses to handle mutations.
+     */
+    mutationCallback(mutationsList, observer) {
+        throw new Error('Unhandled mutationCallback');
+    }
+
+    /**
+     * Run all hooks that should be called prior to refreshing the element
+     */
+    #beforeRefresh() {
+        for (const func of this.#beforeRefreshHooks) {
+            func();
+        }
+    }
+
+    /**
+     * Run all hooks that should be called after refreshing the element
+     */
+    #afterRefresh() {
+        for (const func of this.#afterRefreshHooks) {
+            func();
+        }
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/main/tile.js
+/* global userloc */
+
 class Tile {
     #x;
     #y;
-    #tile_id;
-    #virtual_tile;
+    #tileId;
+    #virtualTile;
     #highlights = new Set();
     #listenerNonce = new Set();
 
     static colours = new Map([
         ['Green', {
-            'red': 0,
-            'green': 128,
-            'blue': 0,
-            'short_code': 'g'
+            red: 0,
+            green: 128,
+            blue: 0,
+            shortCode: 'g',
         }],
         ['Blue', {
-            'red': 0,
-            'green': 0,
-            'blue': 128,
-            'short_code': 'b',
+            red: 0,
+            green: 0,
+            blue: 128,
+            shortCode: 'b',
         }],
         ['Red', {
-            'red': 128,
-            'green': 0,
-            'blue': 0,
-            'short_code': 'r'
+            red: 128,
+            green: 0,
+            blue: 0,
+            shortCode: 'r',
         }],
         ['Yellow', {
-            'red': 128,
-            'green': 128,
-            'blue': 0,
-            'short_code': 'y'
+            red: 128,
+            green: 128,
+            blue: 0,
+            shortCode: 'y',
         }],
         ['Cyan', {
-            'red': 0,
-            'green': 128,
-            'blue': 128,
-            'short_code': 'c'
+            red: 0,
+            green: 128,
+            blue: 128,
+            shortCode: 'c',
         }],
         ['Magenta', {
-            'red': 128,
-            'green': 0,
-            'blue': 128,
-            'short_code': 'm'
+            red: 128,
+            green: 0,
+            blue: 128,
+            shortCode: 'm',
         }],
         ['Silver', {
-            'red': 128,
-            'green': 128,
-            'blue': 128,
-            'short_code': 's'
+            red: 128,
+            green: 128,
+            blue: 128,
+            shortCode: 's',
         }],
     ]);
 
-    constructor(element, x, y, tile_id = null, virtual_tile = false) {
+    constructor(element, x, y, tileId = null, virtualTile = false) {
         this.#x = x;
         this.#y = y;
         this.emphasised = false;
-        this.path_highlighted = false;
-        this.#virtual_tile = virtual_tile;
+        this.pathHighlighted = false;
+        this.#virtualTile = virtualTile;
         this.type = 'regular';
         this.objectType = '';
 
         if (this.isVirtualTile()) {
-            this.#tile_id = tile_id.toString();
+            this.#tileId = tileId.toString();
         } else {
             this.element = element;
-            this.background_image = this.element.style.backgroundImage;
-            const unhighlight_regex = /^\s*linear-gradient.*?, (url\(.*)$/;
+            this.backgroundImage = this.element.style.backgroundImage;
+            const unhighlightRegex = /^\s*linear-gradient.*?, (url\(.*)$/;
 
-            if (unhighlight_regex.test(this.background_image)) {
-                this.background_image = this.background_image.match(unhighlight_regex)[1];
+            if (unhighlightRegex.test(this.backgroundImage)) {
+                this.backgroundImage = this.backgroundImage.match(unhighlightRegex)[1];
             }
 
             if (this.element.classList.contains('navNpc')) {
@@ -160,26 +236,25 @@ class Tile {
 
             // Get the tile id
             if (this.element.classList.contains('navShip') && this.element.querySelector('#thisShip')) {
-                this.#tile_id = this.getUserloc();
+                this.#tileId = this.getUserloc();
             } else if (this.element.children.length > 0 && this.element.querySelector('A')) {
-
                 // In order to support blue stims, we have to use querySelector to handle the extra <div>
-                const child_element = this.element.querySelector('A');
+                const childElement = this.element.querySelector('A');
 
                 // Can we navigate to the tile?
-                if ((!child_element.hasAttribute('onclick') || child_element.getAttribute('onclick').startsWith('warp')) && (!child_element.hasAttribute('_onclick') || child_element.getAttribute('_onclick').startsWith('warp'))) {
-                    this.#tile_id = this.getUserloc();
-                } else if (child_element.hasAttribute('onclick') && child_element.getAttribute('onclick').startsWith('nav')) {
-                    this.#tile_id = child_element.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
-                } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick').startsWith('nav')) {
+                if ((!childElement.hasAttribute('onclick') || childElement.getAttribute('onclick').startsWith('warp')) && (!childElement.hasAttribute('_onclick') || childElement.getAttribute('_onclick').startsWith('warp'))) {
+                    this.#tileId = this.getUserloc();
+                } else if (childElement.hasAttribute('onclick') && childElement.getAttribute('onclick').startsWith('nav')) {
+                    this.#tileId = childElement.getAttribute('onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
+                } else if (childElement.hasAttribute('_onclick') && childElement.getAttribute('_onclick').startsWith('nav')) {
                     // Freeze Frame compatibility
-                    this.#tile_id = child_element.getAttribute('_onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
-                } else if (child_element.hasAttribute('_onclick') && child_element.getAttribute('_onclick') === "null") {
-                    this.#tile_id = this.getUserloc();
+                    this.#tileId = childElement.getAttribute('_onclick').match(/^[^\d]*(\d*)[^\d]*$/)[1];
+                } else if (childElement.hasAttribute('_onclick') && childElement.getAttribute('_onclick') === 'null') {
+                    this.#tileId = this.getUserloc();
                 }
             } else if (this.element.classList.contains('navShip')) {
                 // This only happens on retreating
-                this.#tile_id = this.getUserloc();
+                this.#tileId = this.getUserloc();
             }
         }
     }
@@ -201,11 +276,11 @@ class Tile {
     }
 
     set id(id) {
-        this.#tile_id = id.toString();
+        this.#tileId = id.toString();
     }
 
     get id() {
-        return this.#tile_id;
+        return this.#tileId;
     }
 
     get x() {
@@ -219,25 +294,24 @@ class Tile {
     getUserloc() {
         if (typeof userloc !== 'undefined') {
             return userloc.toString();
-        } else {
-            return '-1';
         }
+        return '-1';
     }
 
     toString() {
-        return `Tile ${this.#tile_id} [${this.x}, ${this.y}]`;
+        return `Tile ${this.#tileId} [${this.x}, ${this.y}]`;
     }
 
     valueOf() {
-        return Number(this.#tile_id);
+        return Number(this.#tileId);
     }
 
     isVirtualTile() {
-        return this.#virtual_tile;
+        return this.#virtualTile;
     }
 
     isClickable() {
-        if (!this.isVirtualTile() && this.#tile_id && parseInt(this.#tile_id) > 0) {
+        if (!this.isVirtualTile() && this.#tileId && parseInt(this.#tileId, 10) > 0) {
             return true;
         }
 
@@ -257,7 +331,7 @@ class Tile {
     }
 
     isCentreTile() {
-        return this.is_centre_tile;
+        return this.isCentre;
     }
 
     isHighlighted() {
@@ -269,7 +343,7 @@ class Tile {
     }
 
     addEventListener(event, func, options = {}) {
-        if (options.hasOwnProperty('nonce')) {
+        if (Object.prototype.hasOwnProperty.call(options, 'nonce')) {
             if (this.#listenerNonce.has(options.nonce)) {
                 return;
             }
@@ -278,14 +352,14 @@ class Tile {
         if (this.isNavigatable()) {
             this.element.querySelector('A').addEventListener(event, func, options);
 
-            if (options.hasOwnProperty('nonce')) {
+            if (Object.prototype.hasOwnProperty.call(options, 'nonce')) {
                 this.#listenerNonce.add(options.nonce);
             }
         }
     }
 
-    addHighlight(highlight_colour) {
-        this.#highlights.add(highlight_colour);
+    addHighlight(highlightColour) {
+        this.#highlights.add(highlightColour);
         this.#refreshHighlightStatus();
     }
 
@@ -297,8 +371,8 @@ class Tile {
         this.#refreshHighlightStatus();
     }
 
-    removeHighlight(highlight_colour) {
-        this.#highlights.delete(highlight_colour);
+    removeHighlight(highlightColour) {
+        this.#highlights.delete(highlightColour);
         this.#refreshHighlightStatus();
     }
 
@@ -329,16 +403,18 @@ class Tile {
             return this.#clearAllHighlighting();
         }
 
-        const highlighted_colour_string = this.#getHighlightedColourString();
+        const highlightedColourString = this.#getHighlightedColourString();
         const emphasis = this.emphasised ? 0.8 : 0.5;
 
         // Does this tile have a background image?
-        if (this.background_image) {
-            this.element.style.backgroundImage = `linear-gradient(to bottom, rgba(${highlighted_colour_string},${emphasis}), rgba(${highlighted_colour_string},${emphasis})), ` + this.background_image;
+        if (this.backgroundImage) {
+            this.element.style.backgroundImage = `linear-gradient(to bottom, rgba(${highlightedColourString},${emphasis}), rgba(${highlightedColourString},${emphasis})), ${this.backgroundImage}`;
         } else {
-            this.element.style.backgroundColor = `rgba(${highlighted_colour_string},1)`;
+            this.element.style.backgroundColor = `rgba(${highlightedColourString},1)`;
             this.element.firstElementChild.style.opacity = 1 - emphasis;
         }
+
+        return true;
     }
 
     #clearAllHighlighting() {
@@ -348,10 +424,10 @@ class Tile {
 
         this.#highlights.clear();
 
-        if (this.background_image) {
-            this.element.style.backgroundImage = this.background_image;
+        if (this.backgroundImage) {
+            this.element.style.backgroundImage = this.backgroundImage;
         } else {
-            this.element.style.backgroundColor = ''
+            this.element.style.backgroundColor = '';
             this.element.firstElementChild.style.opacity = 1;
         }
 
@@ -359,14 +435,12 @@ class Tile {
     }
 
     * #yieldHighlightsRGB() {
-        const highlights = [];
-
         for (const colour of this.constructor.colours.values()) {
-            if (this.#highlights.has(colour.short_code)) {
+            if (this.#highlights.has(colour.shortCode)) {
                 yield {
                     red: colour.red,
                     green: colour.green,
-                    blue: colour.blue
+                    blue: colour.blue,
                 };
             }
         }
@@ -378,85 +452,84 @@ class Tile {
         }
 
         // This is probably the world's worst colour-mixing algorithm
-        let total_red = 0;
-        let total_green = 0;
-        let total_blue = 0;
+        let totalRed = 0;
+        let totalGreen = 0;
+        let totalBlue = 0;
 
-        let number_red = 0;
-        let number_green = 0;
-        let number_blue = 0;
+        let numberRed = 0;
+        let numberGreen = 0;
+        let numberBlue = 0;
 
         for (const colour of this.#yieldHighlightsRGB()) {
-            total_red += colour.red;
-            total_green += colour.green;
-            total_blue += colour.blue;
+            totalRed += colour.red;
+            totalGreen += colour.green;
+            totalBlue += colour.blue;
 
-            number_red += 1;
-            number_green += 1;
-            number_blue += 1;
+            numberRed += 1;
+            numberGreen += 1;
+            numberBlue += 1;
         }
 
-        if (number_red === 0) {
-            number_red = 1;
+        if (numberRed === 0) {
+            numberRed = 1;
         }
 
-        if (number_green === 0) {
-            number_green = 1;
+        if (numberGreen === 0) {
+            numberGreen = 1;
         }
 
-        if (number_blue === 0) {
-            number_blue = 1;
+        if (numberBlue === 0) {
+            numberBlue = 1;
         }
 
-        return `${Math.floor(total_red / number_red)},${Math.floor(total_green / number_green)},${Math.floor(total_blue / number_blue)}`;
+        return `${Math.floor(totalRed / numberRed)},${Math.floor(totalGreen / numberGreen)},${Math.floor(totalBlue / numberBlue)}`;
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/pardus/sector.js
+;// ./node_modules/pardus-library/src/classes/pardus/sector.js
 
 
 class Sector {
-
-    #id_start = 0;
+    #idStart = 0;
     #columns = 0;
     #rows = 0;
 
     constructor(name, start, columns, rows) {
         this.name = name;
-        this.#id_start = start;
+        this.#idStart = start;
         this.#columns = columns;
         this.#rows = rows;
     }
 
-    contains(tile_id) {
-        if (tile_id >= this.#id_start && tile_id < this.#id_start + (this.#columns * this.#rows)) {
+    contains(tileId) {
+        if (tileId >= this.#idStart && tileId < this.#idStart + (this.#columns * this.#rows)) {
             return true;
         }
 
         return false;
     }
 
-    getTile(tile_id) {
-        if (!this.contains(tile_id)) {
+    getTile(tileId) {
+        if (!this.contains(tileId)) {
             return null;
         }
 
         return {
-            'sector': this.name,
-            'x': Math.floor((tile_id - this.#id_start) / this.#rows),
-            'y': (tile_id - this.#id_start) % this.#rows,
-            'tile_id': tile_id,
-            'rows': this.#rows,
-            'colums': this.#columns
-        }
+            sector: this.name,
+            x: Math.floor((tileId - this.#idStart) / this.#rows),
+            y: (tileId - this.#idStart) % this.#rows,
+            tileId,
+            rows: this.#rows,
+            colums: this.#columns,
+        };
     }
 
     getVirtualTile(x, y, reference) {
         return new Tile(null, x, y, Number(reference.id) + (x - reference.x) + ((y - reference.y) * this.#columns), true);
     }
 
-    getTileHumanString(tile_id) {
-        const sectorObj = this.getTile(tile_id);
+    getTileHumanString(tileId) {
+        const sectorObj = this.getTile(tileId);
 
         return `${sectorObj.sector} [${sectorObj.x}, ${sectorObj.y}]`;
     }
@@ -466,12 +539,12 @@ class Sector {
             return -1;
         }
 
-        return Number(this.#id_start) + Number(x) * Number(this.#rows) + Number(y);
+        return Number(this.#idStart) + Number(x) * Number(this.#rows) + Number(y);
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/data/sectors.js
-const sectorMapDataObj = {
+;// ./node_modules/pardus-library/src/data/sectors.js
+const sectors = {
     "Aandti" : { "start": 78435, "cols": 22, "rows": 13 },
     "AB 5-848" : { "start": 375000, "cols": 18, "rows": 14 },
     "Abeho" : { "start": 325645, "cols": 25, "rows": 13 },
@@ -874,116 +947,79 @@ const sectorMapDataObj = {
     "ZZ 2986" : { "start": 6334, "cols": 15, "rows": 5 },
 };
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/static/sectors.js
+;// ./node_modules/pardus-library/src/classes/static/sectors.js
 
 
 
 const Sectors = new Map();
 
-for (const sector of Object.keys(sectorMapDataObj)) {
-    Sectors.set(sector, new Sector(sector, sectorMapDataObj[sector].start, sectorMapDataObj[sector].cols, sectorMapDataObj[sector].rows));
+for (const sector of Object.keys(sectors)) {
+    Sectors.set(sector, new Sector(sector, sectors[sector].start, sectors[sector].cols, sectors[sector].rows));
 }
 
-Sectors.getSectorForTile = function(tile_id) { 
+Sectors.getSectorForTile = function(tileId) {
     for (const sector of this.getSectors()) {
-        if (sector.contains(tile_id)) {
+        if (sector.contains(tileId)) {
             return sector;
         }
     }
 
-    throw new Error(`No sector found for tile id ${tile_id}`);
-}
+    throw new Error(`No sector found for tile id ${tileId}`);
+};
 
-Sectors.getSectorAndCoordsForTile = function(tile_id) {
-    return this.getSectorForTile(tile_id).getTileHumanString(tile_id);
-}
+Sectors.getSectorAndCoordsForTile = function(tileId) {
+    return this.getSectorForTile(tileId).getTileHumanString(tileId);
+};
 
 Sectors.getTileIdFromSectorAndCoords = function(sector, x, y) {
-    if (sector.endsWith('NE')) {
-        sector = sector.substring(0, sector.length - 3);
+    let actualSector = sector;
+
+    if (actualSector.endsWith('NE')) {
+        actualSector = actualSector.substring(0, actualSector.length - 3);
     }
 
-    if (sector.endsWith('East') || sector.endsWith('West')) {
-        sector = sector.substring(0, sector.length - 5);
+    if (actualSector.endsWith('East') || actualSector.endsWith('West')) {
+        actualSector = actualSector.substring(0, actualSector.length - 5);
     }
 
-    if (sector.endsWith('North') || sector.endsWith('South') || sector.endsWith('Inner')) {
-        sector = sector.substring(0, sector.length - 6);
+    if (actualSector.endsWith('North') || actualSector.endsWith('South') || actualSector.endsWith('Inner')) {
+        actualSector = actualSector.substring(0, actualSector.length - 6);
     }
 
-    if (!this.has(sector)) {
-        throw `No data for sector '${sector}'!`;
+    if (!this.has(actualSector)) {
+        throw new Error(`No data for sector '${actualSector}'!`);
     }
 
-    return this.get(sector).getTileByCoords(x, y);
-}
+    return this.get(actualSector).getTileByCoords(x, y);
+};
 
 Sectors.getSectors = function * () {
     for (const sector of this) {
         yield sector[1];
     }
-}
+};
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/main/nav.js
+/* harmony default export */ const static_sectors = (Sectors);
+
+;// ./node_modules/pardus-library/src/classes/main/nav.js
 
 
 
-class NavArea {
 
-    #squad = false;
+class NavArea extends Refreshable {
+    #squad;
     #navElement;
     #height;
     #width;
     #grid = [];
     #centreTile;
 
-    #afterRefreshHooks = [];
-    #beforeRefreshHooks = [];
-
     constructor(options = {
-        squad: false
+        squad: false,
     }) {
+        super();
         this.#squad = options.squad;
         this.refresh();
-    }
-
-    /**
-     * Add a hook to run after the element is refreshed
-     * @function HtmlElement#addAfterRefreshElement
-     * @param {function} func Function to call after the element is refreshed
-     */
-    addAfterRefreshHook(func) {
-        this.#afterRefreshHooks.push(func);
-    }
-
-    /**
-     * Add a hook to run after the element is refreshed
-     * @function HtmlElement#addAfterRefreshElement
-     * @param {function} func Function to call after the element is refreshed
-     */
-    addBeforeRefreshHook(func) {
-        this.#beforeRefreshHooks.push(func);
-    }
-
-    /**
-     * Run all hooks that should be called prior to refreshing the element
-     * @function Nav#beforeRefresh
-     */
-    #beforeRefresh() {
-        for (const func of this.#beforeRefreshHooks) {
-            func();
-        }
-    }
-
-    /**
-     * Run all hooks that should be called after refreshing the element
-     * @function Nav#afterRefresh
-     * @param {object} opts Optional arguments to be passed to the hooks
-     */
-    #afterRefresh(opts = {}) {
-        for (const func of this.#afterRefreshHooks) {
-            func(opts);
-        }
     }
 
     get height() {
@@ -1002,18 +1038,18 @@ class NavArea {
         return this.#centreTile;
     }
 
-    addTilesHighlights(tiles_to_highlight) {
+    addTilesHighlights(tilesToHighlight) {
         for (const tile of this.clickableTiles()) {
-            if (tiles_to_highlight.has(tile.id)) {
-                tile.addHighlights(tiles_to_highlight.get(tile.id));
+            if (tilesToHighlight.has(tile.id)) {
+                tile.addHighlights(tilesToHighlight.get(tile.id));
             }
         }
     }
 
-    addTilesHighlight(tiles_to_highlight) {
+    addTilesHighlight(tilesToHighlight) {
         for (const tile of this.clickableTiles()) {
-            if (tiles_to_highlight.has(tile.id)) {
-                tile.addHighlight(tiles_to_highlight.get(tile.id));
+            if (tilesToHighlight.has(tile.id)) {
+                tile.addHighlight(tilesToHighlight.get(tile.id));
             }
         }
     }
@@ -1024,21 +1060,15 @@ class NavArea {
         }
     }
 
-    refreshTilesToHighlight(tiles_to_highlight) {
-        this.tiles_to_highlight = tiles_to_highlight;
-        this.reload(true);
+    refreshTilesToHighlight(tilesToHighlight) {
+        this.tilesToHighlight = tilesToHighlight;
+        this.refresh();
     }
 
-    refresh() {
-        this.#beforeRefresh();
-        this.#reload();
-        this.#afterRefresh();
-    }
-
-    #reload() {
+    _reload() {
         this.#navElement = document.getElementById('navareatransition');
 
-        if (!this.#navElement || this.#navElement.style.display === "none") {
+        if (!this.#navElement || this.#navElement.style.display === 'none') {
             this.#navElement = document.getElementById('navarea');
         }
 
@@ -1046,51 +1076,49 @@ class NavArea {
         this.#width = this.#navElement.rows[0].childElementCount;
         this.#grid = [];
 
-        this.tiles_map = new Map();
+        this.tilesMap = new Map();
 
-        let scanned_x = 0;
-        let scanned_y = 0;
+        let scannedX = 0;
+        let scannedY = 0;
 
         for (const row of this.#navElement.rows) {
-            const row_arr = [];
+            const rowArray = [];
 
-            for (const tile_td of row.children) {
-
-                let tile_number;
+            for (const tileTd of row.children) {
+                let tileNumber;
 
                 /* There's probably no reason not to use the squad logic for normal ships, too */
                 if (this.#squad) {
-                    tile_number = (scanned_y * this.#width) + scanned_x;
+                    tileNumber = (scannedY * this.#width) + scannedX;
                 } else {
-                    tile_number = parseInt(tile_td.id.match(/[^\d]*(\d*)/)[1]);
+                    tileNumber = parseInt(tileTd.id.match(/[^\d]*(\d*)/)[1], 10);
                 }
 
-                const tile_x = tile_number % this.#width;
-                const tile_y = Math.floor(tile_number / this.#width);
+                const tileX = tileNumber % this.#width;
+                const tileY = Math.floor(tileNumber / this.#width);
+                const tile = new Tile(tileTd, tileX, tileY);
 
-                const tile = new Tile(tile_td, tile_x, tile_y);
+                rowArray.push(tile);
+                this.tilesMap.set(tile.id, tile);
 
-                row_arr.push(tile);
-                this.tiles_map.set(tile.id, tile);
-
-                scanned_x++;
+                scannedX++;
             }
 
-            this.#grid.push(row_arr);
-            scanned_y++;
-            scanned_x = 0;
+            this.#grid.push(rowArray);
+            scannedY++;
+            scannedX = 0;
         }
 
-        const centre_x = Math.floor(this.#width / 2);
-        const centre_y = Math.floor(this.#height / 2);
+        const centreX = Math.floor(this.#width / 2);
+        const centreY = Math.floor(this.#height / 2);
 
-        this.#centreTile = this.#grid[centre_y][centre_x];
-        this.#centreTile.is_centre_tile = true;
+        this.#centreTile = this.#grid[centreY][centreX];
+        this.#centreTile.isCentre = true;
 
         /* For squads or other situations where no userloc is available */
         if (!this.#centreTile.id || this.#centreTile.id === '-1') {
-            if (this.#grid[centre_y - 1][centre_x].id !== '-1') {
-                const newId = parseInt(this.#grid[centre_y - 1][centre_x].id) + 1;
+            if (this.#grid[centreY - 1][centreX].id !== '-1') {
+                const newId = parseInt(this.#grid[centreY - 1][centreX].id, 10) + 1;
                 this.#centreTile.id = newId;
             }
         }
@@ -1098,94 +1126,85 @@ class NavArea {
 
     getTileOrVirtual(x, y, reference) {
         if (x >= this.#grid[0].length || x < 0 || y < 0 || y >= this.#grid.length) {
-            return Sectors.getSectorForTile(reference.id).getVirtualTile(x, y, reference);
+            return static_sectors.getSectorForTile(reference.id).getVirtualTile(x, y, reference);
         }
 
         return this.#grid[y][x];
     }
 
-    * yieldPathBetween(from, to, ignore_navigatable = false) {
-        let current_tile = from;
-        yield current_tile;
+    * yieldPathBetween(from, to, ignoreNavigatable = false) {
+        let currentTile = from;
+        yield currentTile;
 
-        while (current_tile.x != to.x || current_tile.y != to.y) {
-
-            let direction_x = 0;
-            let direction_y = 0;
+        while (currentTile.x !== to.x || currentTile.y !== to.y) {
+            let directionX = 0;
+            let directionY = 0;
 
             // Which way do we want to move?
-            if (current_tile.x > to.x) {
-                direction_x = -1;
-            } else if (current_tile.x < to.x) {
-                direction_x = 1;
+            if (currentTile.x > to.x) {
+                directionX = -1;
+            } else if (currentTile.x < to.x) {
+                directionX = 1;
             }
 
-            if (current_tile.y > to.y) {
-                direction_y = -1;
-            } else if (current_tile.y < to.y) {
-                direction_y = 1;
+            if (currentTile.y > to.y) {
+                directionY = -1;
+            } else if (currentTile.y < to.y) {
+                directionY = 1;
             }
 
-            if (direction_x == 0 && direction_y == 0) {
+            if (directionX === 0 && directionY === 0) {
                 // We should never end up here, as it implies the two co-ords have the same x and y
                 break;
             }
 
-            let candidate_tile = this.#grid[current_tile.y + direction_y][current_tile.x + direction_x];
+            let candidateTile = this.#grid[currentTile.y + directionY][currentTile.x + directionX];
 
             // Check to see if it's an unpassable tile, in which case the auto-pilot kicks in
-            if (!candidate_tile.isNavigatable()) {
-
-                if (candidate_tile.isVirtualTile()) {
+            if (!candidateTile.isNavigatable()) {
+                if (candidateTile.isVirtualTile()) {
                     break;
                 }
 
                 // If we're still going diagonally, the auto-pilot cannot do anything smart, so try to go in just one direction
-                if (direction_x != 0 && direction_y != 0) {
+                if (directionX !== 0 && directionY !== 0) {
+                    candidateTile = this.getTileOrVirtual(currentTile.x, currentTile.y + directionY, currentTile);
 
-                    candidate_tile = this.getTileOrVirtual(current_tile.x, current_tile.y + direction_y, current_tile);
+                    if (!candidateTile.isNavigatable()) {
+                        candidateTile = this.getTileOrVirtual(currentTile.x + directionX, currentTile.y, currentTile);
 
-                    if (!candidate_tile.isNavigatable()) {
-
-                        candidate_tile = this.getTileOrVirtual(current_tile.x + direction_x, current_tile.y, current_tile);
-
-                        if (!candidate_tile.isNavigatable()) {
+                        if (!candidateTile.isNavigatable()) {
                             break;
                         }
                     }
-                } else if (direction_x == 0) {
+                } else if (directionX === 0) {
                     // Vertical auto-pilot will attempt to navigate right, then left
+                    candidateTile = this.getTileOrVirtual(currentTile.x + 1, currentTile.y + directionY, currentTile);
 
-                    candidate_tile = this.getTileOrVirtual(current_tile.x + 1, current_tile.y + direction_y, current_tile);
+                    if (!candidateTile.isNavigatable() && !candidateTile.isVirtualTile()) {
+                        candidateTile = this.getTileOrVirtual(currentTile.x - 1, currentTile.y + directionY, currentTile);
 
-                    if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
-
-                        candidate_tile = this.getTileOrVirtual(current_tile.x - 1, current_tile.y + direction_y, current_tile);
-
-                        if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
+                        if (!candidateTile.isNavigatable() && !candidateTile.isVirtualTile()) {
                             break;
                         }
                     }
-                } else if (direction_y == 0) {
+                } else if (directionY === 0) {
                     // Horizontal auto-pilot will attempt to navigate down, then up
+                    candidateTile = this.getTileOrVirtual(currentTile.x + directionX, currentTile.y + 1, currentTile);
 
-                    candidate_tile = this.getTileOrVirtual(current_tile.x + direction_x, current_tile.y + 1, current_tile);
+                    if (!candidateTile.isNavigatable() && !candidateTile.isVirtualTile()) {
+                        candidateTile = this.getTileOrVirtual(currentTile.x + directionX, currentTile.y - 1, currentTile);
 
-                    if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
-
-                        candidate_tile = this.getTileOrVirtual(current_tile.x + direction_x, current_tile.y - 1, current_tile);
-
-                        if (!candidate_tile.isNavigatable() && !candidate_tile.isVirtualTile()) {
+                        if (!candidateTile.isNavigatable() && !candidateTile.isVirtualTile()) {
                             break;
                         }
                     }
                 }
             }
 
-            current_tile = candidate_tile;
-            yield current_tile;
+            currentTile = candidateTile;
+            yield currentTile;
         }
-
     }
 
     getPathBetween(from, to) {
@@ -1204,14 +1223,14 @@ class NavArea {
         yield* this.yieldPathBetween(this.#centreTile, tile);
     }
 
-    * yieldPathFrom(id, ignore_navigatable = false) {
-        const from_tile = this.getTile(id);
-        yield* this.yieldPathBetween(from_tile, this.#centreTile, ignore_navigatable);
+    * yieldPathFrom(id, ignoreNavigatable = false) {
+        const fromTile = this.getTile(id);
+        yield* this.yieldPathBetween(fromTile, this.#centreTile, ignoreNavigatable);
     }
 
     getTile(id) {
-        if (this.tiles_map.has(id)) {
-            return this.tiles_map.get(id);
+        if (this.tilesMap.has(id)) {
+            return this.tilesMap.get(id);
         }
 
         return null;
@@ -1253,11 +1272,11 @@ class NavArea {
 
     nav(id) {
         if (typeof navAjax === 'function') {
-            return navAjax(id);
+            return navAjax(id);  
         }
 
         if (typeof nav === 'function') {
-            return nav(id);
+            return nav(id);  
         }
 
         throw new Error('No function for nav or navAjax found!');
@@ -1265,11 +1284,11 @@ class NavArea {
 
     warp(id) {
         if (typeof warpAjax === 'function') {
-            return warpAjax(id);
+            return warpAjax(id);  
         }
 
         if (typeof warp === 'function') {
-            return warp(id);
+            return warp(id);  
         }
 
         throw new Error('No function for warp or warpAjax found!');
@@ -1290,17 +1309,102 @@ class NavArea {
             throw new Error(`Destination ${id} is not a valid X-hole!`);
         }
 
-        document.getElementById('xholebox').elements.warpx.value = id;
+        const xHoleBoxElement = document.getElementById('xholebox');
+        xHoleBoxElement.elements.warpx.value = id;
 
         if (typeof warpX === 'function') {
-            return warpX();
+            return warpX();  
         }
 
-        return document.getElementById("xholebox").submit();
+        return xHoleBoxElement.submit();
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/pages/main.js
+;// ./node_modules/pardus-library/src/classes/main/other-ships.js
+
+
+class OtherShips extends Refreshable {
+    constructor() {
+        super();
+        this.element = document.getElementById('otherships');
+        this.content = document.getElementById('otherships_content');
+        this.addMutationObserver(this.element);
+    }
+
+    mutationCallback(mutationsList, observer) {
+        for (const mutationRecord of mutationsList) {
+            // We only care about new elements being added, not any _gc_X elements being cleaned up
+            if (!('addedNodes' in mutationRecord) || mutationRecord.addedNodes.length === 0) {
+                continue;
+            }
+
+            // We only care about the otherships_content div being replaced
+            for (const addedNode of mutationRecord.addedNodes) {
+                if (!('id' in addedNode) || addedNode.id !== 'otherships_content') {
+                    continue;
+                }
+
+                // console.log(this);
+                this.content = addedNode;
+                this.refresh();
+            }
+        }
+    }
+
+    isFocusedOnSingleShip() {
+        return !!document.getElementById('divDetailsPlayerTop');
+    }
+
+    getShips() {
+        if (this.isFocusedOnSingleShip()) {
+            return null;
+        }
+
+        const ships = [];
+        const shipsElements = this.content.querySelectorAll('table');
+
+        for (const shipElement of shipsElements) {
+            const playerId = shipElement.id.slice(16); // tableScannerShip12345
+            const online = !!shipElement.querySelector('img')?.src.endsWith('online.png');
+            const [playerNameElement, allianceNameElement] = shipElement.querySelectorAll('a');
+            const playerName = playerNameElement.innerText;
+            const allianceName = allianceNameElement?.innerText;
+            const shipType = this.#extractShipNameFromBackgroundImage(shipElement.querySelector('td').style.backgroundImage);
+            const ship = {
+                playerId,
+                online,
+                playerName,
+                allianceName,
+                shipType,
+                shipElement
+            };
+
+            ships.push(ship);
+        }
+
+        return ships;
+    }
+
+    #extractShipNameFromBackgroundImage(backgroundImageStr) {
+        // 'url("//static.pardus.at/img/stdhq/ships/harvester_paint04.png")'
+        const url = backgroundImageStr.split('"')[1];
+        const shipImageWithPaintAndExtension = url.split('/')[url.split('/').length - 1];
+        const shipImageWithPaint = shipImageWithPaintAndExtension.slice(0, -4);
+
+        if (shipImageWithPaint.endsWith('_paint01') || shipImageWithPaint.endsWith('_paint02') || shipImageWithPaint.endsWith('_paint03') || shipImageWithPaint.endsWith('_paint04')) {
+            return shipImageWithPaint.slice(0, -8);
+        }
+
+        if (shipImageWithPaint.endsWith('_xmas')) {
+            return shipImageWithPaint.slice(0, -5);
+        }
+
+        return shipImageWithPaint;
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pages/main.js
+
 
 
 
@@ -1311,6 +1415,10 @@ class Main extends AbstractPage {
         super('/main.php');
 
         this.#navArea = new NavArea();
+        this.otherShips = new OtherShips();
+        // this.otherShips.addAfterRefreshHook(() => {
+        //     console.log('Other ships refreshed!');
+        // });
 
         this.#handlePartialRefresh(() => {
             this.#navArea.refresh();
@@ -1331,13 +1439,13 @@ class Main extends AbstractPage {
         // Options for the observer (which mutations to observe)
         const config = {
             attributes: false,
-            childList: true, 
-            subtree: true
+            childList: true,
+            subtree: true,
         };
 
         // Callback function to execute when mutations are observed
         const callback = function(mutationsList, observer) {
-            func();
+            func(mutationsList, observer);
         };
 
         // Create an observer instance linked to the callback function
@@ -1348,7 +1456,73 @@ class Main extends AbstractPage {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/pages/logout.js
+;// ./node_modules/pardus-library/src/classes/pages/msgframe.js
+
+
+
+class Msgframe extends AbstractPage {
+    #centreTd;
+
+    constructor() {
+        super('/msgframe.php');
+        this.#centreTd = document.querySelector('td[align="center"]');
+
+        if (window.parent) {
+            window.parent.window.addEventListener('pardus-message', (event) => {
+                this.addMessage(event.detail.msg, event.detail.type);
+            });
+        }
+    }
+
+    hasMessage() {
+        if (this.#centreTd.querySelector('table')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    addMessage(msg, type) {
+        let icon = 'gnome-info';
+        let colour = '#CCCCCC';
+
+        switch (type) {
+            case 'error':
+                icon = 'gnome-error';
+                colour = '#FF3300';
+                break;
+            default:
+                icon = 'gnome-info';
+                colour = '#CCCCCC';
+        }
+
+        this.#setMessage(msg, icon, colour);
+    }
+
+    #setMessage(msg, icon, colour) {
+        const str = `<table style="background-image:url(${PardusLibrary.getImagePackUrl()}bgmedium.gif);border-style:ridge;border-color:#2b2b51;border-width:2px;" cellspacing="0" cellpadding="0" align="center"><tbody><tr><td><img src="${PardusLibrary.getImagePackUrl()}${icon}.png" alt="" width="32" height="32"></td><td style="padding-left:2px;padding-right:4px;"><font style="font-weight:bold;font-size:13px;" color="${colour}"> ${msg}</font></td></tr></tbody></table>`;
+        this.#centreTd.innerHTML = str;
+    }
+
+    addErrorMessage(msg) {
+        this.addMessage(msg, 'error');
+    }
+
+    static sendMessage(msg, type) {
+        const messageDetail = {
+            detail: {
+                msg,
+                type,
+            },
+        };
+        const pardusMessageEvent = new CustomEvent('pardus-message', messageDetail);
+
+        const target = window.parent ? window.parent.window : window;
+        target.dispatchEvent(pardusMessageEvent);
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pages/logout.js
 
 
 class Logout extends AbstractPage {
@@ -1357,14 +1531,800 @@ class Logout extends AbstractPage {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/pages/index.js
+;// ./node_modules/pardus-library/src/classes/pardus/commodity.js
+class Commodity {
+    #name;
+    #sellElement = null;
+    #buyElement = null;
+    sellPrice = 0;
+    buyPrice = 0;
+    shipStock = 0;
+    tradeStock = 0;
+    bal = 0;
+    min = 0;
+    max = 0;
+
+    constructor(name) {
+        this.#name = name;
+    }
+
+    get name() {
+        return this.#name;
+    }
+
+    set sellElement(element) {
+        this.#sellElement = element;
+    }
+
+    get buyElement() {
+        return this.#buyElement;
+    }
+
+    set buyElement(element) {
+        this.#buyElement = element;
+    }
+
+    sell(quantity) {
+        if (this.#sellElement !== null) {
+            this.#sellElement.value = quantity;
+            this.#sellElement.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+
+    buy(quantity) {
+        if (this.#buyElement !== null) {
+            this.#buyElement.value = quantity;
+            this.#buyElement.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }
+
+    getSelling() {
+        if (this.#sellElement !== null && this.#sellElement !== undefined) {
+            const parsed = parseInt(this.#sellElement.value, 10);
+            if (!Number.isNaN(parsed)) {
+                return parsed;
+            }
+        }
+        return 0;
+    }
+
+    getBuying() {
+        if (this.#buyElement !== null && this.#buyElement !== undefined) {
+            const parsed = parseInt(this.#buyElement.value, 10);
+            if (!Number.isNaN(parsed)) {
+                return parsed;
+            }
+        }
+        return 0;
+    }
+}
+
+;// ./node_modules/pardus-library/src/data/commodities.js
+const commodities = [
+    'Food',
+    'Energy',
+    'Water',
+    'Animal embryos',
+    'Ore',
+    'Metal',
+    'Electronics',
+    'Robots',
+    'Heavy plastics',
+    'Hand weapons',
+    'Medicines',
+    'Nebula gas',
+    'Chemical supplies',
+    'Gem stones',
+    'Liquor',
+    'Hydrogen fuel',
+    'Exotic matter',
+    'Optical components',
+    'Radioactive cells',
+    'Droid modules',
+    'Bio-waste',
+    'Leech baby',
+    'Nutrient clods',
+    'Cybernetic X-993 Parts',
+    'X-993 Repair-Drone',
+    'Neural Stimulator',
+    'Battleweapon Parts',
+    'Slaves',
+    'Drugs',
+    'Package',
+    'Faction package',
+    'Explosives',
+    'VIP',
+    'Christmas Glitter',
+    'Military Explosives',
+    'Human intestines',
+    'Skaari limbs',
+    'Keldon brains',
+    'Rashkir bones',
+    'Exotic Crystal',
+    'Blue Sapphire jewels',
+    'Ruby jewels',
+    'Golden Beryl jewels',
+    'Stim Chip',
+    'Neural Tissue',
+    'Capri Stim',
+    'Crimson Stim',
+    'Amber Stim'
+];
+
+;// ./node_modules/pardus-library/src/classes/pardus/ship-space.js
+class ShipSpace {
+    #hasMagscoop;
+    #startingShipSpace;
+    #startingMagscoopSpace;
+    #endingShipSpace;
+    #endingMagscoopSpace;
+    #magscoopSize = 150;
+
+    get hasMagscoop() {
+        return this.#hasMagscoop;
+    }
+
+    constructor(startingShipSpace, startingMagscoopSpace, hasMagscoop = false, magscoopSize = 150) {
+        this.#startingShipSpace = startingShipSpace;
+        this.#startingMagscoopSpace = startingMagscoopSpace;
+        this.#endingShipSpace = startingShipSpace;
+        this.#endingMagscoopSpace = startingMagscoopSpace;
+        this.#hasMagscoop = hasMagscoop;
+        this.#magscoopSize = magscoopSize;
+    }
+
+    calculateAvailableShipSpace(commodities) {
+        this.#calculateShipSpace(commodities);
+        return this.#endingShipSpace;
+    }
+
+    calculateAvailableMagscoopSpace(commodities) {
+        this.#calculateShipSpace(commodities);
+        return this.#endingMagscoopSpace;
+    }
+
+    calculateAvailableTotalSpace(commodities) {
+        this.#calculateShipSpace(commodities);
+        return this.#endingShipSpace + this.#endingMagscoopSpace;
+    }
+
+    getShipSpaceString() {
+        if (this.#hasMagscoop) {
+            return `${this.#endingShipSpace} + ${this.#endingMagscoopSpace}t`;
+        }
+        return `${this.#endingShipSpace}t`;
+    }
+
+    #calculateShipSpace(commodities) {
+        let toSell = 0;
+        let toBuy = 0;
+
+        for (const [commodityName, commodity] of commodities) {
+            if (commodity.shipStock > 0) {
+                toSell += commodity.getSelling();
+            }
+            if (commodity.tradeStock > commodity.min) {
+                toBuy += commodity.getBuying();
+            }
+        }
+
+        this.#endingShipSpace = this.#startingShipSpace;
+
+        if (this.#hasMagscoop) {
+            if (this.#endingShipSpace > 0) {
+                this.#endingMagscoopSpace = this.#startingMagscoopSpace;
+                this.#endingShipSpace = this.#endingShipSpace + toSell - toBuy;
+                if (this.#endingShipSpace < 0) {
+                    this.#endingMagscoopSpace += this.#endingShipSpace;
+                    this.#endingShipSpace = 0;
+                }
+            } else {
+                this.#endingMagscoopSpace = this.#startingMagscoopSpace + toSell - toBuy;
+                if (this.#endingMagscoopSpace > this.#magscoopSize) {
+                    this.#endingShipSpace += this.#endingMagscoopSpace - this.#magscoopSize;
+                    this.#endingMagscoopSpace = this.#magscoopSize;
+                }
+            }
+        } else {
+            this.#endingShipSpace = this.#endingShipSpace + toSell - toBuy;
+        }
+    }
+
+    allowedSpace(magscoopAllowed) {
+        if (this.#hasMagscoop && magscoopAllowed) {
+            return Number(this.#endingShipSpace) + Number(this.#endingMagscoopSpace);
+        }
+        return Number(this.#endingShipSpace);
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pardus/building-space.js
+class BuildingSpace {
+
+    #startingBuildingSpace;
+    #endingBuildingSpace;
+
+    constructor(startingBuildingSpace) {
+        this.#startingBuildingSpace = startingBuildingSpace;
+    }
+
+    calculateAvailableBuildingSpace(commodities) {
+        this.#calculateBuildingSpace(commodities);
+        return this.#endingBuildingSpace;
+    }
+
+    getBuildingSpaceString() {
+        return `${this.#endingBuildingSpace}t`;
+    }
+
+    #calculateBuildingSpace(commodities) {
+        let toSell = 0;
+        let toBuy = 0;
+
+        for (const [commodityName, commodity] of commodities) {
+            if (commodity.shipStock > 0) {
+                toSell += commodity.getSelling();
+            }
+            if (commodity.tradeStock > commodity.min) {
+                toBuy += commodity.getBuying();
+            }
+        }
+
+        this.#endingBuildingSpace = this.#startingBuildingSpace + toSell - toBuy;
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/abstract/tradeable-page.js
 
 
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/classes/pardus-library.js
+
+
+
+
+class TradeablePage extends AbstractPage {
+    #buyTable;
+    #sellTable;
+    #transferButton;
+    #isPlayerOwned = false;
+    #commodities = new Map();
+    #shipSpace = null;
+    #buildingSpace = null;
+    #shipSpaceElement = null;
+    #buildingSpaceElement = null;
+    #spaceRecalcPending = false;
+    #parseOptions;
+
+    constructor(pageName = '', options = {}) {
+        super(pageName);
+        this.#parseOptions = options;
+
+        this.#findTables();
+        this.#parseTables();
+        this.#findTransferButton();
+        this.#wireSpaceListeners();
+    }
+
+    #parseInt(data) {
+        let toReturn = data.replace(/[,\-t]/g, '');
+
+        if (toReturn.search(/\+/g) !== -1) {
+            toReturn = 0;
+        }
+
+        return parseInt(toReturn, 10);
+    }
+
+    #decodeString(data) {
+        let toReturn = data.replace(/&nbsp;/g, ' ');
+        toReturn = toReturn.replace(/\xA0/g, ' ');
+
+        return toReturn;
+    }
+
+    #findTransferButton() {
+        const inputs = document.getElementsByTagName('input');
+
+        for (const input of inputs) {
+            if (input.value.trim() === '<- Transfer ->') {
+                this.#transferButton = input;
+            }
+        }
+
+        if (!this.#transferButton) {
+            this.#transferButton = document.querySelector('input[type="submit"][value*="Transfer"]');
+        }
+    }
+
+    #findTables() {
+        const tablesWithHeaders = document.getElementsByTagName('TH');
+
+        for (const tableToSearch of tablesWithHeaders) {
+            if (!this.#sellTable && this.#decodeString(tableToSearch.innerText) === 'Price (sell)') {
+                this.#sellTable = tableToSearch.parentNode.parentNode;
+            } else if (!this.#buyTable && this.#decodeString(tableToSearch.innerText) === 'Price (buy)') {
+                this.#buyTable = tableToSearch.parentNode.parentNode;
+            }
+
+            if (tableToSearch.innerText === 'Min') {
+                this.#isPlayerOwned = true;
+            }
+        }
+    }
+
+    get commodities() {
+        return this.#commodities;
+    }
+
+    get shipSpace() {
+        return this.#shipSpace;
+    }
+
+    get availableShipSpace() {
+        return this.#shipSpace.calculateAvailableShipSpace(this.#commodities);
+    }
+
+    get availableTotalSpace() {
+        return this.#shipSpace.calculateAvailableTotalSpace(this.#commodities);
+    }
+
+    get availableMagscoopSpace() {
+        return this.#shipSpace.calculateAvailableMagscoopSpace(this.#commodities);
+    }
+
+    allowedSpace(magscoopAllowed) {
+        if (magscoopAllowed && this.#shipSpace?.hasMagscoop) {
+            return this.availableTotalSpace;
+        }
+        return this.availableShipSpace;
+    }
+
+    get availableBuildingSpace() {
+        if (this.#buildingSpace === null) {
+            return null;
+        }
+        return this.#buildingSpace.calculateAvailableBuildingSpace(this.#commodities);
+    }
+
+    get transferButton() {
+        return this.#transferButton;
+    }
+
+    get isPlayerOwned() {
+        return this.#isPlayerOwned;
+    }
+
+    transfer() {
+        if (this.#transferButton) {
+            this.#transferButton.click();
+        }
+    }
+
+    recalculateSpace() {
+        if (this.#spaceRecalcPending) {
+            return;
+        }
+        this.#spaceRecalcPending = true;
+        setTimeout(() => {
+            this.#spaceRecalcPending = false;
+            this.#doRecalculateSpace();
+        }, 0);
+    }
+
+    #doRecalculateSpace() {
+        const shipSpace = this.availableShipSpace;
+        const magscoopSpace = this.#shipSpace?.hasMagscoop
+            ? this.availableMagscoopSpace : 0;
+        const totalSpace = this.#shipSpace?.hasMagscoop
+            ? this.availableTotalSpace : shipSpace;
+        const buildingSpace = this.availableBuildingSpace;
+        const hasMagscoop = this.#shipSpace?.hasMagscoop ?? false;
+
+        if (this.#shipSpaceElement) {
+            this.#shipSpaceElement.textContent = this.#shipSpace.getShipSpaceString();
+        }
+        if (this.#buildingSpaceElement && this.#buildingSpace) {
+            this.#buildingSpaceElement.textContent = this.#buildingSpace.getBuildingSpaceString();
+        }
+
+        document.dispatchEvent(new CustomEvent('pardus-trade-space-changed', {
+            detail: {
+                shipSpace, magscoopSpace, totalSpace, buildingSpace, hasMagscoop,
+            },
+        }));
+    }
+
+    #wireSpaceListeners() {
+        const handler = () => this.recalculateSpace();
+
+        if (this.#sellTable) {
+            this.#sellTable.addEventListener('keyup', handler, true);
+            this.#sellTable.addEventListener('click', handler, true);
+            this.#sellTable.addEventListener('input', handler, true);
+        }
+        if (this.#buyTable) {
+            this.#buyTable.addEventListener('keyup', handler, true);
+            this.#buyTable.addEventListener('click', handler, true);
+            this.#buyTable.addEventListener('input', handler, true);
+        }
+    }
+
+    #parseBuyCommodity(commodity, row) {
+        const overrides = this.#parseOptions.buyOverrides;
+
+        if (overrides) {
+            commodity.buyPrice = this.#parseInt(row.cells[overrides.buyPrice].innerText);
+            commodity.buyElement = row.cells[overrides.buyElement]?.childNodes[0] ?? null;
+
+            if (overrides.synthetic) {
+                commodity.tradeStock = overrides.synthetic.tradeStock;
+                commodity.bal = overrides.synthetic.bal;
+                commodity.min = overrides.synthetic.min;
+                commodity.max = overrides.synthetic.max;
+            }
+
+            if (overrides.shortageCheck && commodity.buyElement == null) {
+                commodity.tradeStock = 0;
+            }
+        } else if (this.#isPlayerOwned) {
+            commodity.tradeStock = this.#parseInt(row.cells[2].innerText);
+            commodity.min = this.#parseInt(row.cells[4].innerText);
+            commodity.max = this.#parseInt(row.cells[5].innerText);
+            commodity.buyPrice = this.#parseInt(row.cells[6].innerText);
+            commodity.buyElement = row.cells[7]?.childNodes[0] ?? null;
+        } else {
+            commodity.tradeStock = this.#parseInt(row.cells[2].innerText);
+            commodity.bal = this.#parseInt(row.cells[3].innerText);
+            commodity.min = commodity.bal;
+            commodity.max = this.#parseInt(row.cells[4].innerText);
+            commodity.buyPrice = this.#parseInt(row.cells[5].innerText);
+            commodity.buyElement = row.cells[6]?.childNodes[0] ?? null;
+        }
+    }
+
+    #parseTable(table, type) {
+        for (const row of table.rows) {
+            // Skip header row
+            if (row.cells[0].tagName === 'TH') {
+                continue;
+            }
+
+            // Skip break rows
+            if (row.cells.length < 2) {
+                continue;
+            }
+
+            // Free space row
+            if (this.#decodeString(row.cells[0].innerText) === 'free space:') {
+                switch (type) {
+                    case 'sell':
+                        this.#shipSpaceElement = row.cells[1];
+                        const shipSpaceLocation = row.cells[1];
+                        let hasMagscoop = false;
+                        let startingShipSpace = 0;
+                        let startingMagscoopSpace = 0;
+                        let magscoopSize = 150;
+
+                        // Do they have a magscoop?
+                        if (shipSpaceLocation.innerText.indexOf('+') !== -1) {
+
+                            const tmpFreeSpace = shipSpaceLocation.innerText.split('+');
+                            hasMagscoop = true;
+
+                            startingShipSpace = this.#parseInt(tmpFreeSpace[0]);
+                            startingMagscoopSpace = this.#parseInt(tmpFreeSpace[1]);
+
+                            if (startingMagscoopSpace > 150) {
+                                magscoopSize = 250;
+                            } else if (startingShipSpace > 0) {
+                                magscoopSize = 150;
+                            }
+
+                        } else {
+                            startingShipSpace = this.#parseInt(shipSpaceLocation.innerText);
+                        }
+
+                        if (!this.#shipSpace) {
+                            this.#shipSpace = new ShipSpace(startingShipSpace, startingMagscoopSpace, hasMagscoop, magscoopSize);
+                        }
+                        break;
+                    case 'buy':
+                        this.#buildingSpaceElement = row.cells[1];
+                        const buildingSpaceLocation = row.cells[1];
+                        const startingBuildingSpace = this.#parseInt(buildingSpaceLocation.innerText);
+
+                        if (!this.#buildingSpace) {
+                            this.#buildingSpace = new BuildingSpace(startingBuildingSpace);
+                        }
+
+                        break;
+                }
+
+            }
+
+            const commodityName = row.cells[1].innerText;
+
+            // Skip non-commodity row
+            if (!commodities.includes(commodityName)) {
+                continue;
+            }
+
+            let commodity = this.#commodities.get(commodityName);
+
+            if (!commodity) {
+                commodity = new Commodity(commodityName);
+            }
+
+            switch (type) {
+                case 'sell':
+                    commodity.shipStock = this.#parseInt(row.cells[2].innerText);
+                    commodity.sellPrice = this.#parseInt(row.cells[3].innerText);
+                    commodity.sellElement = row.cells[4]?.childNodes[0] ?? null;
+                    break;
+                case 'buy':
+                    this.#parseBuyCommodity(commodity, row);
+                    break;
+            }
+
+            this.#commodities.set(commodityName, commodity);
+        }
+    }
+
+    #parseTables() {
+        if (this.#sellTable) {
+            this.#parseTable(this.#sellTable, 'sell');
+        }
+        if (this.#buyTable) {
+            this.#parseTable(this.#buyTable, 'buy');
+        }
+
+        if (this.#parseOptions.syntheticBuildingSpace !== undefined && this.#buildingSpace === null) {
+            this.#buildingSpace = new BuildingSpace(this.#parseOptions.syntheticBuildingSpace);
+        }
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pages/planet-trade.js
+
+
+class PlanetTrade extends TradeablePage {
+    #planetType;
+
+    constructor() {
+        super('/planet_trade.php');
+        this.#identifyPlanet();
+    }
+
+    get type() {
+        return this.#planetType;
+    }
+
+    #identifyPlanet() {
+        const planetImage = document.getElementsByTagName('img')[3].src.split('/');
+        const imageString = planetImage[planetImage.length - 1];
+
+        switch (imageString) {
+            case 'planet_i.png':
+                this.#planetType = 'i';
+                break;
+            case 'planet_r.png':
+                this.#planetType = 'r';
+                break;
+            case 'planet_m.png':
+                this.#planetType = 'm';
+                break;
+            case 'planet_a.png':
+                this.#planetType = 'a';
+                break;
+            case 'planet_d.png':
+                this.#planetType = 'd';
+                break;
+            case 'planet_g.png':
+                this.#planetType = 'g';
+                break;
+            default:
+                this.#planetType = 'm';
+        }
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pages/starbase-trade.js
+
+
+class StarbaseTrade extends TradeablePage {
+    constructor() {
+        super('/starbase_trade.php');
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pages/blackmarket.js
+
+
+class Blackmarket extends TradeablePage {
+    constructor() {
+        super('/blackmarket.php', {
+            buyOverrides: {
+                buyPrice: 3,
+                buyElement: 4,
+                synthetic: {
+                    tradeStock: 999,
+                    bal: 0,
+                    min: 0,
+                    max: 1999,
+                },
+                shortageCheck: true,
+            },
+            syntheticBuildingSpace: 999,
+        });
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pages/drop-cargo.js
+
+
+
+class DropCargo extends AbstractPage {
+    #dropTable;
+    #commodities = new Map();
+
+    constructor() {
+        super('/drop_cargo.php');
+        this.#findTable();
+        this.#parseTable();
+    }
+
+    get commodities() {
+        return this.#commodities;
+    }
+
+    #parseInt(data) {
+        let toReturn = data.replace(/[,\-t]/g, '');
+
+        if (toReturn.search(/\+/g) !== -1) {
+            toReturn = 0;
+        }
+
+        return parseInt(toReturn, 10);
+    }
+
+    #findTable() {
+        const headers = document.getElementsByTagName('TH');
+
+        for (const header of headers) {
+            if (header.innerText === 'Resource') {
+                this.#dropTable = header.parentNode.parentNode;
+                break;
+            }
+        }
+    }
+
+    #parseTable() {
+        if (!this.#dropTable) {
+            return;
+        }
+
+        for (const row of this.#dropTable.rows) {
+            if (row.cells[0].tagName === 'TH') {
+                continue;
+            }
+
+            if (row.cells.length < 2) {
+                continue;
+            }
+
+            const commodityName = row.cells[1].innerText;
+
+            if (!commodities.includes(commodityName)) {
+                continue;
+            }
+
+            this.#commodities.set(commodityName, {
+                name: commodityName,
+                shipStock: this.#parseInt(row.cells[2].innerText),
+                dropElement: row.cells[3]?.childNodes[0] ?? null,
+                drop(quantity) {
+                    if (this.dropElement !== null) {
+                        this.dropElement.value = quantity;
+                    }
+                },
+            });
+        }
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pages/ship-transfer.js
+
+
+class ShipTransfer extends AbstractPage {
+    #form;
+    #resourcesTable;
+    #resources = new Map();
+
+    constructor() {
+        super('/ship2ship_transfer.php');
+        this.#form = document.getElementById('ship2ship_transfer');
+        this.#resourcesTable = document.querySelector('form table.messagestyle');
+        this.#parseResources();
+    }
+
+    get form() {
+        return this.#form;
+    }
+
+    get resourcesTable() {
+        return this.#resourcesTable;
+    }
+
+    get resources() {
+        return this.#resources;
+    }
+
+    get playerId() {
+        return document.querySelector('input[name="playerid"]').value;
+    }
+
+    get freeSpace() {
+        const freeSpaceElements = document.getElementsByTagName('b');
+        return freeSpaceElements.length === 1 ? parseInt(freeSpaceElements[0].textContent, 10) : 0;
+    }
+
+    submit() {
+        if (this.#form) {
+            this.#form.submit();
+        }
+    }
+
+    getRedirectUrl() {
+        const currentUrl = new URL(window.location);
+        return `${currentUrl.protocol}//${currentUrl.hostname}${currentUrl.pathname}?playerid=${this.playerId}`;
+    }
+
+    #parseResources() {
+        if (!this.#resourcesTable) {
+            return;
+        }
+
+        for (const row of this.#resourcesTable.rows) {
+            if (row.cells.length < 4) {
+                continue;
+            }
+
+            const resourceName = row.cells[1].textContent;
+            const amount = parseInt(row.cells[2].textContent, 10);
+            const inputElement = row.cells[3].childNodes[0] ?? null;
+
+            if (Number.isNaN(amount)) {
+                continue;
+            }
+
+            this.#resources.set(resourceName, {
+                name: resourceName,
+                amount,
+                inputElement,
+                row,
+                transfer(quantity) {
+                    if (this.inputElement !== null) {
+                        this.inputElement.value = quantity;
+                    }
+                },
+            });
+        }
+    }
+}
+
+;// ./node_modules/pardus-library/src/classes/pages/index.js
+
+
+
+
+
+
+
+
+
+;// ./node_modules/pardus-library/src/classes/pardus-library.js
 
 
 class PardusLibrary {
-
     #currentPage;
 
     constructor() {
@@ -1374,6 +2334,21 @@ class PardusLibrary {
                 break;
             case '/logout.php':
                 this.#currentPage = new Logout();
+                break;
+            case '/planet_trade.php':
+                this.#currentPage = new PlanetTrade();
+                break;
+            case '/starbase_trade.php':
+                this.#currentPage = new StarbaseTrade();
+                break;
+            case '/blackmarket.php':
+                this.#currentPage = new Blackmarket();
+                break;
+            case '/drop_cargo.php':
+                this.#currentPage = new DropCargo();
+                break;
+            case '/ship2ship_transfer.php':
+                this.#currentPage = new ShipTransfer();
                 break;
             default:
                 this.#currentPage = 'No page implemented!';
@@ -1421,31 +2396,34 @@ class PardusLibrary {
         }
     }
 }
-;// CONCATENATED MODULE: ./node_modules/pardus-library/src/index.js
+
+;// ./node_modules/pardus-library/src/index.js
 
 
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/pardus-options-utility.js
+
+
+;// ./node_modules/pardus-options-library/src/classes/pardus-options-utility.js
 /**
  * @module PardusOptionsUtility
  */
 class PardusOptionsUtility {
     /**
-     * @ignore
+     *  @ignore
      */
     static defaultSaveFunction(key, value) {
         return GM_setValue(key, value);
     }
 
     /**
-     * @ignore
+     *  @ignore
      */
     static defaultGetFunction(key, defaultValue = null) {
         return GM_getValue(key, defaultValue);
     }
 
     /**
-     * @ignore
+     *  @ignore
      */
     static defaultDeleteFunction(key) {
         return GM_deleteValue(key);
@@ -1471,6 +2449,7 @@ class PardusOptionsUtility {
 
     /**
      *  Returns the universe-specific name of a variable
+     *  @ignore
      */
     static getVariableName(variableName) {
         return `${this.getUniverse()}_${variableName}`;
@@ -1478,6 +2457,9 @@ class PardusOptionsUtility {
 
     /**
      *  Returns the universe-specific value of a variable
+     *  @param {string} variableName The name of the universe-specific variable to retrieve
+     *  @param {*} [defaultValue=null] A default value to return if the universe-specific variable has never been set.
+     *  @returns {*} Value of the universe-specific value, or if not set, the default value.
      */
     static getVariableValue(variableName, defaultValue = null) {
         return this.defaultGetFunction(this.getVariableName(variableName), defaultValue);
@@ -1485,6 +2467,8 @@ class PardusOptionsUtility {
 
     /**
      *  Sets the universe-specific value of a variable
+     *  @param {string} variableName The name of the universe-specific variable to set
+     *  @param {*} value The value to set for the universe-specific variable.
      */
     static setVariableValue(variableName, value) {
         return this.defaultSaveFunction(this.getVariableName(variableName), value);
@@ -1492,16 +2476,24 @@ class PardusOptionsUtility {
 
     /**
      *  Deletes the universe-specific value of a variable
+     *  @param {string} variableName The name of the universe-specific variable to delete
      */
     static deleteVariableValue(variableName) {
         return this.defaultDeleteFunction(this.getVariableName(variableName));
     }
 
+    /**
+     *  @ignore
+     */
     static setActiveTab(id) {
         window.localStorage.setItem('pardusOptionsOpenTab', id);
         window.dispatchEvent(new window.Event('storage'));
     }
 
+    /**
+     *  Returns a path to the user's image pack to use as a base for relative image URLs
+     *  @returns {string} Path to the user's iamge pack
+     */
     static getImagePackUrl() {
         const defaultImagePackUrl = '//static.pardus.at/img/std/';
         const imagePackUrl = String(document.querySelector('body').style.backgroundImage).replace(/url\("*|"*\)|[a-z0-9]+\.gif/g, '');
@@ -1510,10 +2502,10 @@ class PardusOptionsUtility {
     }
 
     /**
-     * @ignore
+     *  @ignore
      */
     static addGlobalListeners() {
-        EventTarget.prototype.addPardusKeyDownListener = function addPardusKeyDownListener(pardusVariable, defaultValue = null, listener, options = false) {
+        EventTarget.prototype.addPardusKeyDownListener = function addPardusKeyDownListener(pardusVariable, defaultValue, listener, options = false) {
             const pardusVariableKey = PardusOptionsUtility.getVariableValue(pardusVariable, defaultValue);
 
             if (!pardusVariableKey) {
@@ -1552,7 +2544,7 @@ class PardusOptionsUtility {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/html-element.js
+;// ./node_modules/pardus-options-library/src/classes/html-element.js
 /**
  * @class HtmlElement
  */
@@ -1743,7 +2735,7 @@ class HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/tip-box.js
+;// ./node_modules/pardus-options-library/src/classes/tip-box.js
 
 
 
@@ -1814,7 +2806,7 @@ class TipBox extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/tabs/tabs-row.js
+;// ./node_modules/pardus-options-library/src/classes/tabs/tabs-row.js
 
 
 class TabsRow extends HtmlElement {
@@ -1860,7 +2852,7 @@ class TabsRow extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/tabs/tabs-element.js
+;// ./node_modules/pardus-options-library/src/classes/tabs/tabs-element.js
 
 
 
@@ -1887,7 +2879,7 @@ class TabsElement extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/contents-area.js
+;// ./node_modules/pardus-options-library/src/classes/contents-area.js
 
 
 class ContentsArea extends HtmlElement {
@@ -1911,7 +2903,7 @@ class ContentsArea extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/tabs/tab-label.js
+;// ./node_modules/pardus-options-library/src/classes/tabs/tab-label.js
 
 
 
@@ -1920,7 +2912,7 @@ class TabLabel extends HtmlElement {
         id,
         heading,
         active = false,
-        padding = '0px',
+        padding = '10px',
     }) {
         super(id);
         this.padding = padding;
@@ -1944,7 +2936,7 @@ class TabLabel extends HtmlElement {
 
     toString() {
         const imageUrl = (this.active) ? 'tabactive' : 'tab';
-        return `<td id="${this.id}" style="background: transparent url(&quot;${PardusOptionsUtility.getImagePackUrl()}${imageUrl}.png&quot;) no-repeat scroll 0% 0%; background-size: cover; cursor: default; padding-left: ${this.padding}; padding-right: ${this.padding}" class="tabcontent">${this.heading}</td>`;
+        return `<td id="${this.id}" style="background: transparent url(&quot;${PardusOptionsUtility.getImagePackUrl()}${imageUrl}.png&quot;) no-repeat scroll 0% 0%; background-size: cover; cursor: default; padding-left: ${this.padding}; padding-right: ${this.padding}; box-sizing: border-box" class="tabcontent">${this.heading}</td>`;
     }
 
     setActive() {
@@ -1958,15 +2950,21 @@ class TabLabel extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/disablable-html-element.js
+;// ./node_modules/pardus-options-library/src/classes/disableable-html-element.js
 
 
 /**
- * @class DisablableHtmlElement
+ * @class DisableableHtmlElement
  * @extends HtmlElement
  * @abstract
  */
-class DisablableHtmlElement extends HtmlElement {
+class DisableableHtmlElement extends HtmlElement {
+    /**
+     * Create an HTML element that can be disabled
+     * @param {object} params Object containing parameters
+     * @param {string} params.id The id of the string. Must be unique.
+     * @param {boolean} params.disabled Whether the element is disabled or not
+     */
     constructor({
         id,
         disabled = false,
@@ -1977,7 +2975,7 @@ class DisablableHtmlElement extends HtmlElement {
 
     /**
      * Disables this element and all nested elements
-     * @function DisablableHtmlElement#disable
+     * @function DisableableHtmlElement#disable
      */
     disable() {
         this.setDisabled(true);
@@ -1986,7 +2984,7 @@ class DisablableHtmlElement extends HtmlElement {
 
     /**
      * Enables this element and all nested elements
-     * @function DisablableHtmlElement#enable
+     * @function DisableableHtmlElement#enable
      */
     enable() {
         this.setDisabled(false);
@@ -1995,17 +2993,17 @@ class DisablableHtmlElement extends HtmlElement {
 
     /**
      * Allows disabling or enabling ths element and all nested elements without refreshing
-     * @function DisablableHtmlElement#setDisabled
+     * @function DisableableHtmlElement#setDisabled
      */
     setDisabled(disabled = false) {
         this.disabled = disabled;
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/abstract/abstract-button.js
+;// ./node_modules/pardus-options-library/src/classes/abstract/abstract-button.js
 
 
-class AbstractButton extends DisablableHtmlElement {
+class AbstractButton extends DisableableHtmlElement {
     constructor({
         id,
         premium = false,
@@ -2120,7 +3118,7 @@ class AbstractButton extends DisablableHtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/save-button-row/save-button.js
+;// ./node_modules/pardus-options-library/src/classes/save-button-row/save-button.js
 
 
 class SaveButton extends AbstractButton {
@@ -2143,7 +3141,7 @@ class SaveButton extends AbstractButton {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/save-button-row/reset-button.js
+;// ./node_modules/pardus-options-library/src/classes/save-button-row/reset-button.js
 
 
 class ResetButton extends AbstractButton {
@@ -2166,12 +3164,12 @@ class ResetButton extends AbstractButton {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/save-button-row/save-button-row.js
+;// ./node_modules/pardus-options-library/src/classes/save-button-row/save-button-row.js
 
 
 
 
-class SaveButtonRow extends DisablableHtmlElement {
+class SaveButtonRow extends DisableableHtmlElement {
     constructor({
         id,
         premium = false,
@@ -2237,7 +3235,7 @@ class SaveButtonRow extends DisablableHtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/save-button-row/load-button.js
+;// ./node_modules/pardus-options-library/src/classes/save-button-row/load-button.js
 
 
 class LoadButton extends AbstractButton {
@@ -2260,11 +3258,11 @@ class LoadButton extends AbstractButton {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/save-button-row/preset-label.js
+;// ./node_modules/pardus-options-library/src/classes/save-button-row/preset-label.js
 
 
 
-class PresetLabel extends DisablableHtmlElement {
+class PresetLabel extends DisableableHtmlElement {
     constructor({
         id,
         disabled = false,
@@ -2357,13 +3355,13 @@ class PresetLabel extends DisablableHtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/save-button-row/preset-row.js
+;// ./node_modules/pardus-options-library/src/classes/save-button-row/preset-row.js
 
 
 
 
 
-class PresetRow extends DisablableHtmlElement {
+class PresetRow extends DisableableHtmlElement {
     constructor({
         id,
         premium = false,
@@ -2465,11 +3463,11 @@ class PresetRow extends DisablableHtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/save-button-row/presets.js
+;// ./node_modules/pardus-options-library/src/classes/save-button-row/presets.js
 
 
 
-class Presets extends DisablableHtmlElement {
+class Presets extends DisableableHtmlElement {
     constructor({
         id,
         premium = false,
@@ -2524,7 +3522,7 @@ class Presets extends DisablableHtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/info-element.js
+;// ./node_modules/pardus-options-library/src/classes/info-element.js
 
 
 
@@ -2583,17 +3581,17 @@ class InfoElement extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/abstract-option.js
+;// ./node_modules/pardus-options-library/src/classes/options/abstract-option.js
 
 
 
 
 /**
  * @class AbstractOption
- * @extends DisablableHtmlElement
+ * @extends DisableableHtmlElement
  * @abstract
  */
-class AbstractOption extends DisablableHtmlElement {
+class AbstractOption extends DisableableHtmlElement {
     constructor({
         id,
         variable,
@@ -2774,7 +3772,7 @@ class AbstractOption extends DisablableHtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/boolean-option.js
+;// ./node_modules/pardus-options-library/src/classes/options/boolean-option.js
 
 
 /**
@@ -2790,12 +3788,17 @@ class BooleanOption extends AbstractOption {
         return `<input id="${this.inputId}" type="checkbox"${checkedStatus} style="${this.style}" ${this.disabled ? 'disabled' : ''}>`;
     }
 
+    /**
+     * Gets the current value of the boolean options element
+     * @function BooleanOption#getCurrentValue
+     * @returns {boolean} Value of the boolean options element
+     */
     getCurrentValue() {
         return this.getInputElement().checked;
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/text-area-option.js
+;// ./node_modules/pardus-options-library/src/classes/options/text-area-option.js
 
 
 
@@ -2836,7 +3839,7 @@ class TextAreaOption extends AbstractOption {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/numeric-option.js
+;// ./node_modules/pardus-options-library/src/classes/options/numeric-option.js
 
 
 
@@ -2878,7 +3881,7 @@ class NumericOption extends AbstractOption {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/abstract/abstract-toggle-button.js
+;// ./node_modules/pardus-options-library/src/classes/abstract/abstract-toggle-button.js
 
 
 class AbstractToggleButton extends AbstractButton {
@@ -3025,7 +4028,7 @@ class AbstractToggleButton extends AbstractButton {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/key-down-set-key-button.js
+;// ./node_modules/pardus-options-library/src/classes/options/key-down-set-key-button.js
 
 
 class SetKeyButton extends AbstractToggleButton {
@@ -3045,7 +4048,7 @@ class SetKeyButton extends AbstractToggleButton {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/key-down-disable-button.js
+;// ./node_modules/pardus-options-library/src/classes/options/key-down-disable-button.js
 
 
 class DisableButton extends AbstractToggleButton {
@@ -3067,7 +4070,7 @@ class DisableButton extends AbstractToggleButton {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/key-down-option.js
+;// ./node_modules/pardus-options-library/src/classes/options/key-down-option.js
 
 
 
@@ -3247,7 +4250,7 @@ class KeyDownOption extends AbstractOption {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/select-option.js
+;// ./node_modules/pardus-options-library/src/classes/options/select-option.js
 
 
 
@@ -3323,7 +4326,7 @@ class SelectOption extends AbstractOption {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options/grouped-options.js
+;// ./node_modules/pardus-options-library/src/classes/options/grouped-options.js
 
 
 
@@ -3386,7 +4389,7 @@ class GroupedOptions extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options-group.js
+;// ./node_modules/pardus-options-library/src/classes/options-group.js
 
 
 
@@ -3396,7 +4399,7 @@ class GroupedOptions extends HtmlElement {
 
 
 
-class OptionsGroup extends DisablableHtmlElement {
+class OptionsGroup extends DisableableHtmlElement {
     constructor({
         id,
         premium = false,
@@ -3502,7 +4505,7 @@ class OptionsGroup extends DisablableHtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/description-element.js
+;// ./node_modules/pardus-options-library/src/classes/description-element.js
 
 
 /**
@@ -3584,7 +4587,7 @@ class DescriptionElement extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options-box.js
+;// ./node_modules/pardus-options-library/src/classes/options-box.js
 
 
 
@@ -3592,7 +4595,7 @@ class DescriptionElement extends HtmlElement {
 
 
 
-class OptionsBox extends DisablableHtmlElement {
+class OptionsBox extends DisableableHtmlElement {
     constructor({
         id,
         heading,
@@ -3786,7 +4789,7 @@ class OptionsBox extends DisablableHtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/options-content.js
+;// ./node_modules/pardus-options-library/src/classes/options-content.js
 
 
 
@@ -3966,7 +4969,7 @@ class OptionsContent extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/tabs/sub-tab.js
+;// ./node_modules/pardus-options-library/src/classes/tabs/sub-tab.js
 
 
 
@@ -4034,7 +5037,8 @@ class SubTab {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/version-row.js
+;// ./node_modules/pardus-options-library/src/classes/version-row.js
+/*eslint camelcase: ["error", {allow: ["GM_info"]}]*/
 
 
 class VersionRow extends HtmlElement {
@@ -4049,7 +5053,7 @@ class VersionRow extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/tabs/tab-content.js
+;// ./node_modules/pardus-options-library/src/classes/tabs/tab-content.js
 
 
 
@@ -4200,7 +5204,7 @@ class TabContent extends HtmlElement {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/tabs/tab.js
+;// ./node_modules/pardus-options-library/src/classes/tabs/tab.js
 
 
 
@@ -4268,7 +5272,7 @@ class Tab {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/classes/pardus-options.js
+;// ./node_modules/pardus-options-library/src/classes/pardus-options.js
 
 
 
@@ -4414,7 +5418,7 @@ class PardusOptions {
     }
 }
 
-;// CONCATENATED MODULE: ./node_modules/pardus-options-library/src/index.js
+;// ./node_modules/pardus-options-library/src/index.js
 
 
 
@@ -4429,7 +5433,7 @@ PardusOptionsUtility.addGlobalListeners();
 
 
 
-;// CONCATENATED MODULE: ./src/classes/main/navigation-favourite.js
+;// ./src/classes/main/navigation-favourite.js
 
 
 class NavigationFavourite {
@@ -4516,7 +5520,7 @@ class NavigationFavourite {
     }
 }
 
-;// CONCATENATED MODULE: ./src/classes/main/navigation-favourites.js
+;// ./src/classes/main/navigation-favourites.js
 
 
 
@@ -4559,14 +5563,14 @@ class NavigationFavourites {
     }
 }
 
-;// CONCATENATED MODULE: ./src/static/helpers.js
+;// ./src/static/helpers.js
 
 
 function mapperUrlsFromRoute(route = []) {
     const sectorRoutes = new Map();
 
     for (let index = 0; index < route.length; index += 1) {
-        const tileObj = Sectors.getSectorForTile(route[index]).getTile(route[index]);
+        const tileObj = static_sectors.getSectorForTile(route[index]).getTile(route[index]);
 
         if (!tileObj) {
             console.log(`No tile object for ${route[index]}`);
@@ -4611,7 +5615,7 @@ function estimateXYHoleAPCost(maneuver) {
     return 1000 + (10 * Math.floor(150 * (10 ** (-0.019 * adjManeuver)) - adjManeuver ** (1 / 3)));
 }
 
-;// CONCATENATED MODULE: ./src/classes/main/navigation-options.js
+;// ./src/classes/main/navigation-options.js
 
 
 
@@ -4993,7 +5997,7 @@ class NavigationOptions {
     }
 }
 
-;// CONCATENATED MODULE: ./src/classes/main/navigation-calculator-popup.js
+;// ./src/classes/main/navigation-calculator-popup.js
 
 
 
@@ -5033,7 +6037,7 @@ class NavigationCalculatorPopup {
     #getSectorSelectHtml(id) {
         let html = `<select id='select-${id}'><option value='' disabled selected>-- Target Sector --</option>`;
 
-        for (const sector of Sectors) {
+        for (const sector of static_sectors) {
             html += `<option value="${sector[0]}">${sector[0]}</option>`;
         }
 
@@ -5056,7 +6060,7 @@ class NavigationCalculatorPopup {
         const targetX = Number(document.getElementById('target-x').value);
         const targetY = Number(document.getElementById('target-y').value);
 
-        const targetTileId = Sectors.getTileIdFromSectorAndCoords(targetSector, targetX, targetY);
+        const targetTileId = static_sectors.getTileIdFromSectorAndCoords(targetSector, targetX, targetY);
 
         return this.#getRouteTo([startTileId, targetTileId]);
     }
@@ -5112,7 +6116,7 @@ class NavigationCalculatorPopup {
     }
 }
 
-;// CONCATENATED MODULE: ./src/classes/main/nav.js
+;// ./src/classes/main/nav.js
 
 
 
@@ -5148,7 +6152,9 @@ class Nav {
         document.addPardusKeyDownListener('toggle_recording_keypress', { code: 82 }, this.#addRecordingToggleHander);
 
         this.#partialRefresh();
-        this.navArea.addAfterRefreshHook(() => { this.#partialRefresh(); });
+        this.navArea.addAfterRefreshHook(() => {
+            this.#partialRefresh();
+        });
     }
 
     #partialRefresh() {
@@ -5186,8 +6192,8 @@ class Nav {
 
             tile.addEventListener('mouseenter', () => {
                 for (const pathTile of path) {
-                    if (!pathTile.path_highlighted) {
-                        pathTile.path_highlighted = true;
+                    if (!pathTile.pathHighlighted) {
+                        pathTile.pathHighlighted = true;
                         if (pathTile.isHighlighted()) {
                             pathTile.emphasiseHighlight();
                         } else {
@@ -5206,7 +6212,7 @@ class Nav {
                     } else {
                         pathTile.removeHighlight(PardusOptionsUtility.getVariableValue('default_path_colour', 'y'));
                     }
-                    pathTile.path_highlighted = false;
+                    pathTile.pathHighlighted = false;
                 }
             }, {
                 nonce: `path_finding_mouseleave_${tile.id}`,
@@ -5214,8 +6220,8 @@ class Nav {
 
             if (tile.element.querySelector(':hover')) {
                 for (const pathTile of path) {
-                    if (!pathTile.path_highlighted) {
-                        pathTile.path_highlighted = true;
+                    if (!pathTile.pathHighlighted) {
+                        pathTile.pathHighlighted = true;
                         if (pathTile.isHighlighted()) {
                             pathTile.emphasiseHighlight();
                         } else {
@@ -5231,10 +6237,10 @@ class Nav {
         const recording = PardusOptionsUtility.getVariableValue('recording', false);
 
         if (recording) {
-            Msgframe.sendMessage('Recording stopped', 'info');
+            msgframe_Msgframe.sendMessage('Recording stopped', 'info');
             PardusOptionsUtility.setVariableValue('expected_route', []);
         } else {
-            Msgframe.sendMessage('Recording started', 'info');
+            msgframe_Msgframe.sendMessage('Recording started', 'info');
         }
 
         PardusOptionsUtility.setVariableValue('recording', !recording);
@@ -5315,7 +6321,7 @@ class Nav {
 
     fly() {
         if (PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false)) {
-            Msgframe.sendMessage('Modifying route, cannot use autopilot', 'error');
+            msgframe_Msgframe.sendMessage('Modifying route, cannot use autopilot', 'error');
             return false;
         }
 
@@ -5330,7 +6336,7 @@ class Nav {
         }
 
         if (path.length === 0) {
-            Msgframe.sendMessage('No autopilot path programmed', 'error');
+            msgframe_Msgframe.sendMessage('No autopilot path programmed', 'error');
             return false;
         }
 
@@ -5348,13 +6354,13 @@ class Nav {
 
         // Do not fly if we are not currently on the path
         if (currentIndexOnPath < 0) {
-            Msgframe.sendMessage('You are not on the autopilot path', 'error');
+            msgframe_Msgframe.sendMessage('You are not on the autopilot path', 'error');
             return false;
         }
 
         // Are we at the end of the path?
         if (currentIndexOnPath === pathToFly.length - 1) {
-            Msgframe.sendMessage('Autopilot has reached the end of the path', 'info');
+            msgframe_Msgframe.sendMessage('Autopilot has reached the end of the path', 'info');
             return false;
         }
 
@@ -5399,7 +6405,7 @@ class Nav {
             PardusOptionsUtility.setVariableValue('expected_route', pathToFly.slice(currentIndexOnPath, currentIndexOnPath + indexToFlyTo + 1));
             return this.navArea.nav(pathToFly[currentIndexOnPath + indexToFlyTo]);
         } if (checkForNpcs && currentIndexOnPath + indexToFlyTo < pathToFly.length - 1 && this.navArea.getTileOnNav(pathToFly[currentIndexOnPath + indexToFlyTo + 1])?.hasNpc()) {
-            Msgframe.sendMessage('NPC is in the way, please fly around', 'error');
+            msgframe_Msgframe.sendMessage('NPC is in the way, please fly around', 'error');
             return false;
         } if (this.navArea.centreTile.isWormhole()) {
             return this.navArea.warp(pathToFly[currentIndexOnPath]);
@@ -5407,7 +6413,7 @@ class Nav {
             return this.navArea.xhole(pathToFly[currentIndexOnPath + 1]);
         }
 
-        Msgframe.sendMessage(`Unable to fly to ${Sectors.getSectorAndCoordsForTile(pathToFly[currentIndexOnPath + 1])}, please make sure the route is continuous.`, 'error');
+        msgframe_Msgframe.sendMessage(`Unable to fly to ${static_sectors.getSectorAndCoordsForTile(pathToFly[currentIndexOnPath + 1])}, please make sure the route is continuous.`, 'error');
         return false;
     }
 
@@ -5425,7 +6431,7 @@ class Nav {
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}modify_route`, !modifyRoute);
 
             if (!modifyRoute) {
-                Msgframe.sendMessage('Modifying route', 'info');
+                msgframe_Msgframe.sendMessage('Modifying route', 'info');
                 PardusOptionsUtility.setVariableValue('modified_route', [this.navArea.centreTile.id]);
                 // Clear any pending expected_route from the prior flight to prevent
                 // a delayed #addRecording() call from corrupting modified_route
@@ -5434,7 +6440,7 @@ class Nav {
                 const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
                 if (modifiedRoute.length < 2) {
-                    Msgframe.sendMessage('Cancelling route modification', 'info');
+                    msgframe_Msgframe.sendMessage('Cancelling route modification', 'info');
                     return;
                 }
 
@@ -5454,7 +6460,7 @@ class Nav {
                 const endIndex = routeArray.indexOf(modifiedRoute[modifiedRoute.length - 1]);
 
                 if (startIndex < 0 || endIndex < 0) {
-                    Msgframe.sendMessage('Route modification must start and end on the existing route', 'error');
+                    msgframe_Msgframe.sendMessage('Route modification must start and end on the existing route', 'error');
                     return;
                 }
 
@@ -5480,22 +6486,22 @@ class Nav {
                 this.navArea.addTilesHighlight(this.tileMap);
                 this.#highlightRecordedTiles();
 
-                Msgframe.sendMessage('Saving route', 'info');
+                msgframe_Msgframe.sendMessage('Saving route', 'info');
             }
         });
 
         document.addPardusKeyDownListener('toggle_autopilot_direction', { code: 67 }, () => {
             if (PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false)) {
-                Msgframe.sendMessage('Cannot change autopilot direction whilst modifying path', 'error');
+                msgframe_Msgframe.sendMessage('Cannot change autopilot direction whilst modifying path', 'error');
                 return;
             }
 
             const forward = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, false);
 
             if (forward) {
-                Msgframe.sendMessage('Autopilot heading backwards', 'info');
+                msgframe_Msgframe.sendMessage('Autopilot heading backwards', 'info');
             } else {
-                Msgframe.sendMessage('Autopilot heading forward', 'info');
+                msgframe_Msgframe.sendMessage('Autopilot heading forward', 'info');
             }
 
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, !forward);
@@ -5517,7 +6523,7 @@ class Nav {
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}modify_route`, false);
             this.navigationCalculatorPopup.hide();
-            Msgframe.sendMessage('Plotted route to destination', 'info');
+            msgframe_Msgframe.sendMessage('Plotted route to destination', 'info');
 
             this.tileMap = new Map();
 
@@ -5530,7 +6536,7 @@ class Nav {
             this.navArea.addTilesHighlight(this.tileMap);
             this.#highlightRecordedTiles();
         }).catch(() => {
-            Msgframe.sendMessage('Unable to get route to destination', 'error');
+            msgframe_Msgframe.sendMessage('Unable to get route to destination', 'error');
         }).finally(() => {
             this.navigationCalculatorPopup.getCalculateButtonElement().removeAttribute('disabled');
             this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plot route';
@@ -5565,12 +6571,16 @@ class Nav {
             }
         });
 
-        this.navigationCalculatorPopup.element.addPardusKeyDownListener('plot_key', { code: 13 }, (keyEvent) => { this.#plotPath(keyEvent); });
-        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', (keyEvent) => { this.#plotPath(keyEvent); });
+        this.navigationCalculatorPopup.element.addPardusKeyDownListener('plot_key', { code: 13 }, (keyEvent) => {
+            this.#plotPath(keyEvent);
+        });
+        this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', (keyEvent) => {
+            this.#plotPath(keyEvent);
+        });
     }
 }
 
-;// CONCATENATED MODULE: ./src/classes/pages/main.js
+;// ./src/classes/pages/main.js
 
 
 class main_Main {
@@ -5581,10 +6591,10 @@ class main_Main {
     }
 }
 
-;// CONCATENATED MODULE: ./src/classes/pages/msgframe.js
+;// ./src/classes/pages/msgframe.js
 
 
-class Msgframe {
+class msgframe_Msgframe {
     constructor() {
         this.centreTd = document.querySelector('td[align="center"]');
 
@@ -5642,7 +6652,7 @@ class Msgframe {
     }
 }
 
-;// CONCATENATED MODULE: ./src/classes/pages/options.js
+;// ./src/classes/pages/options.js
 
 
 
@@ -5674,7 +6684,7 @@ class OptionsPage {
         this.coloursSelection = [];
         for (const colour of Tile.colours) {
             this.coloursSelection.push({
-                value: colour[1].short_code,
+                value: colour[1].shortCode,
                 text: colour[0],
                 style: `background-color:rgb(${colour[1].red},${colour[1].green},${colour[1].blue})`,
             });
@@ -6079,7 +7089,9 @@ class OptionsPage {
         });
 
         recordedOutputBox.setHTML(OptionsPage.getRecordedOutputBoxHtml());
-        recordedOutputBox.addAfterRefreshHook(() => { this.recordedOutputAfterRefresh(recordedOutputBox); });
+        recordedOutputBox.addAfterRefreshHook(() => {
+            this.recordedOutputAfterRefresh(recordedOutputBox);
+        });
 
         recordingGeneralOptions.addEventListener('save', () => {
             recordedOutputBox.setHTML(OptionsPage.getRecordedOutputBoxHtml());
@@ -6092,7 +7104,9 @@ class OptionsPage {
         });
 
         recordingToggleBox.setHTML(OptionsPage.getRecordingToggleBoxHtml());
-        recordingToggleBox.addAfterRefreshHook(() => { this.recordingToggleAfterRefresh(recordingToggleBox); });
+        recordingToggleBox.addAfterRefreshHook(() => {
+            this.recordingToggleAfterRefresh(recordingToggleBox);
+        });
     }
 
     static getRecordingToggleBoxHtml() {
@@ -6176,7 +7190,7 @@ class OptionsPage {
     }
 }
 
-;// CONCATENATED MODULE: ./src/classes/pages/ship2opponent-combat.js
+;// ./src/classes/pages/ship2opponent-combat.js
 
 
 
@@ -6187,7 +7201,7 @@ class Ship2OpponentCombat {
         const currentLocation = document.querySelector('b').innerText;
 
         const match = currentLocation.match(this.#extractRegex);
-        const matchedTileId = Sectors.getTileIdFromSectorAndCoords(match[1], match[2], match[3]);
+        const matchedTileId = static_sectors.getTileIdFromSectorAndCoords(match[1], match[2], match[3]);
 
         this.tileId = matchedTileId;
         this.#addRecording();
@@ -6195,7 +7209,9 @@ class Ship2OpponentCombat {
     }
 
     #addRetreatHandler() {
-        document.getElementsByName('retreat')[0].addEventListener('click', () => { this.#retreatHandler(); });
+        document.getElementsByName('retreat')[0].addEventListener('click', () => {
+            this.#retreatHandler();
+        });
     }
 
     #retreatHandler() {
@@ -6270,13 +7286,13 @@ class Ship2OpponentCombat {
     }
 }
 
-;// CONCATENATED MODULE: ./src/classes/pages/index.js
+;// ./src/classes/pages/index.js
 
 
 
 
 
-;// CONCATENATED MODULE: ./src/index.js
+;// ./src/index.js
 
 
 
@@ -6292,7 +7308,7 @@ class PardusFlightComputer {
                 new OptionsPage();
                 break;
             case '/msgframe.php':
-                new Msgframe();
+                new msgframe_Msgframe();
                 break;
             case '/ship2opponent_combat.php':
                 new Ship2OpponentCombat();

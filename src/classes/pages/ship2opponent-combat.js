@@ -16,7 +16,9 @@ export default class Ship2OpponentCombat {
     }
 
     #addRetreatHandler() {
-        document.getElementsByName('retreat')[0].addEventListener('click', () => { this.#retreatHandler(); });
+        document.getElementsByName('retreat')[0].addEventListener('click', () => {
+            this.#retreatHandler();
+        });
     }
 
     #retreatHandler() {

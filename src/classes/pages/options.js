@@ -29,7 +29,7 @@ export default class OptionsPage {
         this.coloursSelection = [];
         for (const colour of Tile.colours) {
             this.coloursSelection.push({
-                value: colour[1].short_code,
+                value: colour[1].shortCode,
                 text: colour[0],
                 style: `background-color:rgb(${colour[1].red},${colour[1].green},${colour[1].blue})`,
             });
@@ -434,7 +434,9 @@ export default class OptionsPage {
         });
 
         recordedOutputBox.setHTML(OptionsPage.getRecordedOutputBoxHtml());
-        recordedOutputBox.addAfterRefreshHook(() => { this.recordedOutputAfterRefresh(recordedOutputBox); });
+        recordedOutputBox.addAfterRefreshHook(() => {
+            this.recordedOutputAfterRefresh(recordedOutputBox);
+        });
 
         recordingGeneralOptions.addEventListener('save', () => {
             recordedOutputBox.setHTML(OptionsPage.getRecordedOutputBoxHtml());
@@ -447,7 +449,9 @@ export default class OptionsPage {
         });
 
         recordingToggleBox.setHTML(OptionsPage.getRecordingToggleBoxHtml());
-        recordingToggleBox.addAfterRefreshHook(() => { this.recordingToggleAfterRefresh(recordingToggleBox); });
+        recordingToggleBox.addAfterRefreshHook(() => {
+            this.recordingToggleAfterRefresh(recordingToggleBox);
+        });
     }
 
     static getRecordingToggleBoxHtml() {
