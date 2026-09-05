@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/Tro95/Pardus-Flight-Computer#readme",
   "dependencies": {
-    "pardus-library": "^1.1.0",
+    "pardus-library": "^1.3.0",
     "pardus-options-library": "^2.7.0"
   }
 }

@@ -1,6 +1,5 @@
 import { PardusOptionsUtility } from 'pardus-options-library';
-import { Sectors } from 'pardus-library';
-import { Msgframe } from '../pages/index.js';
+import { Msgframe, Sectors } from 'pardus-library';
 import NavigationCalculatorPopup from './navigation-calculator-popup.js';
 
 export default class Nav {

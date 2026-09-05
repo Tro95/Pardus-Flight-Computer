@@ -1,7 +1,6 @@
-import { PardusLibrary } from 'pardus-library';
+import { Msgframe, PardusLibrary } from 'pardus-library';
 import {
     Main,
-    Msgframe,
     Options,
     Ship2OpponentCombat,
 } from './pages/index.js';
