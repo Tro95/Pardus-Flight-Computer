@@ -36,7 +36,7 @@ var __webpack_exports__ = {};
 
 // EXPORTS
 __webpack_require__.d(__webpack_exports__, {
-  "default": () => (/* binding */ PardusFlightComputer)
+  "default": () => (/* reexport */ PardusFlightComputer)
 });
 
 ;// ./node_modules/pardus-library/src/classes/abstract/abstract-page.js
@@ -148,6 +148,9 @@ class Tile {
     #virtualTile;
     #highlights = new Set();
     #listenerNonce = new Set();
+    #borders = new Set();
+    #glyphs = new Map();
+    #decorationLayer = null;
 
     static colours = new Map([
         ['Green', {
@@ -392,6 +395,176 @@ class Tile {
 
     clearHighlight() {
         this.#clearAllHighlighting();
+    }
+
+    // Borders and glyphs are an overlay layer rendered as a child of the <td>,
+    // independent of highlights. clearHighlight() must NOT remove borders/glyphs,
+    // and clearBorders()/clearGlyphs() must NOT remove highlights — keep these
+    // subsystems separate if refactoring.
+    addBorder(colour) {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
+        this.#borders.add(colour);
+        this.#refreshDecorationLayer();
+        return true;
+    }
+
+    removeBorder(colour) {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
+        const removed = this.#borders.delete(colour);
+        this.#refreshDecorationLayer();
+        return removed;
+    }
+
+    clearBorders() {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
+        this.#borders.clear();
+        this.#refreshDecorationLayer();
+        return true;
+    }
+
+    hasBorder(colour) {
+        return this.#borders.has(colour);
+    }
+
+    getBorders() {
+        return this.#borders.values();
+    }
+
+    addGlyph(symbol, position = 'tr') {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
+        this.#glyphs.set(symbol, position);
+        this.#refreshDecorationLayer();
+        return true;
+    }
+
+    removeGlyph(symbol) {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
+        const removed = this.#glyphs.delete(symbol);
+        this.#refreshDecorationLayer();
+        return removed;
+    }
+
+    clearGlyphs() {
+        if (this.isVirtualTile()) {
+            return false;
+        }
+
+        this.#glyphs.clear();
+        this.#refreshDecorationLayer();
+        return true;
+    }
+
+    hasGlyph(symbol) {
+        return this.#glyphs.has(symbol);
+    }
+
+    getGlyphs() {
+        return this.#glyphs.entries();
+    }
+
+    #resolveColour(input) {
+        for (const colour of this.constructor.colours.values()) {
+            if (colour.shortCode === input) {
+                return `rgb(${colour.red}, ${colour.green}, ${colour.blue})`;
+            }
+        }
+
+        return input;
+    }
+
+    #refreshDecorationLayer() {
+        if (this.#borders.size === 0 && this.#glyphs.size === 0) {
+            if (this.#decorationLayer) {
+                this.#decorationLayer.remove();
+                this.#decorationLayer = null;
+            }
+
+            return;
+        }
+
+        if (!this.#decorationLayer) {
+            if (this.element.style.position === '') {
+                this.element.style.position = 'relative';
+            }
+
+            this.#decorationLayer = document.createElement('div');
+            this.#decorationLayer.className = 'pardus-library-decoration';
+            this.#decorationLayer.style.position = 'absolute';
+            this.#decorationLayer.style.top = '0';
+            this.#decorationLayer.style.left = '0';
+            this.#decorationLayer.style.right = '0';
+            this.#decorationLayer.style.bottom = '0';
+            this.#decorationLayer.style.pointerEvents = 'none';
+            this.#decorationLayer.style.boxSizing = 'border-box';
+            this.element.appendChild(this.#decorationLayer);
+        }
+
+        if (this.#borders.size === 0) {
+            this.#decorationLayer.style.boxShadow = '';
+        } else {
+            const shadows = [];
+            let offset = 0;
+
+            for (const colour of this.#borders) {
+                shadows.push(`inset 0 0 0 ${offset + 2}px ${this.#resolveColour(colour)}`);
+                offset += 2;
+            }
+
+            this.#decorationLayer.style.boxShadow = shadows.join(', ');
+        }
+
+        // Re-render glyphs from scratch each time — small, simple, no leaks.
+        for (const child of Array.from(this.#decorationLayer.children)) {
+            child.remove();
+        }
+
+        for (const [symbol, position] of this.#glyphs) {
+            const glyphEl = document.createElement('span');
+            glyphEl.className = 'pardus-library-decoration__glyph';
+            glyphEl.textContent = symbol;
+            glyphEl.style.position = 'absolute';
+            glyphEl.style.lineHeight = '1';
+            glyphEl.style.fontSize = '12px';
+            glyphEl.style.color = '#ff0';
+            glyphEl.style.textShadow = '0 0 2px #000';
+
+            switch (position) {
+                case 'tl':
+                    glyphEl.style.top = '1px';
+                    glyphEl.style.left = '1px';
+                    break;
+                case 'bl':
+                    glyphEl.style.bottom = '1px';
+                    glyphEl.style.left = '1px';
+                    break;
+                case 'br':
+                    glyphEl.style.bottom = '1px';
+                    glyphEl.style.right = '1px';
+                    break;
+                case 'tr':
+                default:
+                    glyphEl.style.top = '1px';
+                    glyphEl.style.right = '1px';
+                    break;
+            }
+
+            this.#decorationLayer.appendChild(glyphEl);
+        }
     }
 
     #refreshHighlightStatus() {
@@ -1054,6 +1227,50 @@ class NavArea extends Refreshable {
         }
     }
 
+    addTilesBorder(tilesToBorder) {
+        for (const tile of this.clickableTiles()) {
+            if (tilesToBorder.has(tile.id)) {
+                tile.addBorder(tilesToBorder.get(tile.id));
+            }
+        }
+    }
+
+    removeTilesBorder(tileIds, colour) {
+        const idSet = tileIds instanceof Set ? tileIds : new Set(tileIds);
+
+        for (const tile of this.clickableTiles()) {
+            if (idSet.has(tile.id)) {
+                tile.removeBorder(colour);
+            }
+        }
+    }
+
+    addTilesGlyph(tilesToGlyph) {
+        for (const tile of this.clickableTiles()) {
+            if (!tilesToGlyph.has(tile.id)) {
+                continue;
+            }
+
+            const entry = tilesToGlyph.get(tile.id);
+
+            if (typeof entry === 'string') {
+                tile.addGlyph(entry);
+            } else {
+                tile.addGlyph(entry.symbol, entry.position);
+            }
+        }
+    }
+
+    removeTilesGlyph(tileIds, symbol) {
+        const idSet = tileIds instanceof Set ? tileIds : new Set(tileIds);
+
+        for (const tile of this.clickableTiles()) {
+            if (idSet.has(tile.id)) {
+                tile.removeGlyph(symbol);
+            }
+        }
+    }
+
     clearTilesHighlights() {
         for (const tile of this.clickableTiles()) {
             tile.clearHighlight();
@@ -1460,6 +1677,51 @@ class Main extends AbstractPage {
 
 
 
+/**
+ * Cross-script protocol. Any userscript may dispatch this event at the message bus to display a
+ * message, and any script may listen for it. The event name and the shape of `detail` are a
+ * contract with already-published versions of other scripts, so neither may change.
+ */
+const MESSAGE_EVENT = 'pardus-message';
+
+/**
+ * Where the live message listeners are recorded, as `{ generation, handlers }`. Held on the bus
+ * so it survives msgframe reloads, and shared by every script on the page, so this property name
+ * and the record's shape are also a fixed contract between scripts.
+ */
+const RECEIVERS_PROPERTY = 'pardusMessageReceivers';
+
+/**
+ * The window that carries messages between scripts.
+ *
+ * Pardus runs as a frameset, so main.php and msgframe.php are siblings that cannot reach each
+ * other. The frameset window is their nearest common ancestor and outlives every frame within
+ * it, which makes it the one place a sender and a receiver in different frames can both reach.
+ *
+ * @returns {Window} The frameset window, or this window if we are not framed.
+ */
+function getMessageBus() {
+    if (window.parent && window.parent !== window) {
+        return window.parent.window;
+    }
+
+    return window;
+}
+
+/**
+ * A marker identifying the msgframe document this script is running in.
+ *
+ * Every script on the page shares the document's elements, so they all derive the same marker,
+ * and a new msgframe load always produces a different one. `documentElement` is used in
+ * preference to `document` itself because a userscript manager may hand each script its own
+ * wrapper around `document`, whereas DOM nodes are shared as-is.
+ *
+ * @returns {Element} The current document's root element.
+ */
+function getGeneration() {
+    return document.documentElement;
+}
+
 class Msgframe extends AbstractPage {
     #centreTd;
 
@@ -1467,11 +1729,51 @@ class Msgframe extends AbstractPage {
         super('/msgframe.php');
         this.#centreTd = document.querySelector('td[align="center"]');
 
-        if (window.parent) {
-            window.parent.window.addEventListener('pardus-message', (event) => {
-                this.addMessage(event.detail.msg, event.detail.type);
-            });
+        this.#listenForMessages();
+    }
+
+    /**
+     * Attach this document's message listener to the bus, discarding the listeners left there by
+     * the previous msgframe load.
+     *
+     * The bus outlives the msgframe document, so listeners registered during an earlier load are
+     * still attached to it, each holding its Msgframe instance and, through that instance's
+     * centreTd, the whole discarded document. Left alone that repeats on every msgframe reload,
+     * which is a steady memory climb over a long session.
+     *
+     * Every handler in the record was registered by a script running in the document the record
+     * names. If that is not the document we are running in, that document has gone, so every
+     * handler in the list is dead whichever script registered it, and the whole list can be
+     * swept. A record naming the current document is never swept, so a live listener can never
+     * be removed. That is what lets scripts share this record without needing to identify
+     * themselves to one another.
+     */
+    #listenForMessages() {
+        const bus = getMessageBus();
+        const generation = getGeneration();
+        let record = bus[RECEIVERS_PROPERTY];
+
+        if (!record || record.generation.deref() !== generation) {
+            if (record) {
+                record.handlers.forEach((staleHandler) => bus.removeEventListener(MESSAGE_EVENT, staleHandler));
+            }
+
+            // A weak reference so that a document which has already been discarded is not held
+            // alive by this record until the next msgframe load sweeps it.
+            record = {
+                generation: new WeakRef(generation),
+                handlers: [],
+            };
+
+            bus[RECEIVERS_PROPERTY] = record;
         }
+
+        const handler = (event) => {
+            this.addMessage(event.detail.msg, event.detail.type);
+        };
+
+        record.handlers.push(handler);
+        bus.addEventListener(MESSAGE_EVENT, handler);
     }
 
     hasMessage() {
@@ -1508,17 +1810,23 @@ class Msgframe extends AbstractPage {
         this.addMessage(msg, 'error');
     }
 
+    /**
+     *  Display a message in the message frame.
+     *
+     *  Safe to call from any page: the event is dispatched at the frameset window, where the
+     *  msgframe's listener picks it up.
+     *
+     *  @param {string} msg The message to display
+     *  @param {string} [type] Either 'error' or 'info'; anything else is treated as 'info'
+     *  @returns {boolean} False if the event was cancelled, true otherwise
+     */
     static sendMessage(msg, type) {
-        const messageDetail = {
+        return getMessageBus().dispatchEvent(new CustomEvent(MESSAGE_EVENT, {
             detail: {
                 msg,
                 type,
             },
-        };
-        const pardusMessageEvent = new CustomEvent('pardus-message', messageDetail);
-
-        const target = window.parent ? window.parent.window : window;
-        target.dispatchEvent(pardusMessageEvent);
+        }));
     }
 }
 
@@ -3551,7 +3859,6 @@ class InfoElement extends HtmlElement {
         this.tipBoxPosition = tipBoxPosition;
 
         this.addEventListener('mouseover', () => {
-            // eslint-disable-next-line import/no-cycle
             this.tipBox = PardusOptions.getDefaultTipBox();
             this.tipBox.setContents({
                 title: this.title,
@@ -6121,7 +6428,6 @@ class NavigationCalculatorPopup {
 
 
 
-
 class Nav {
     #recordingListeners = new Map();
 
@@ -6237,10 +6543,10 @@ class Nav {
         const recording = PardusOptionsUtility.getVariableValue('recording', false);
 
         if (recording) {
-            msgframe_Msgframe.sendMessage('Recording stopped', 'info');
+            Msgframe.sendMessage('Recording stopped', 'info');
             PardusOptionsUtility.setVariableValue('expected_route', []);
         } else {
-            msgframe_Msgframe.sendMessage('Recording started', 'info');
+            Msgframe.sendMessage('Recording started', 'info');
         }
 
         PardusOptionsUtility.setVariableValue('recording', !recording);
@@ -6321,7 +6627,7 @@ class Nav {
 
     fly() {
         if (PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false)) {
-            msgframe_Msgframe.sendMessage('Modifying route, cannot use autopilot', 'error');
+            Msgframe.sendMessage('Modifying route, cannot use autopilot', 'error');
             return false;
         }
 
@@ -6336,7 +6642,7 @@ class Nav {
         }
 
         if (path.length === 0) {
-            msgframe_Msgframe.sendMessage('No autopilot path programmed', 'error');
+            Msgframe.sendMessage('No autopilot path programmed', 'error');
             return false;
         }
 
@@ -6354,13 +6660,13 @@ class Nav {
 
         // Do not fly if we are not currently on the path
         if (currentIndexOnPath < 0) {
-            msgframe_Msgframe.sendMessage('You are not on the autopilot path', 'error');
+            Msgframe.sendMessage('You are not on the autopilot path', 'error');
             return false;
         }
 
         // Are we at the end of the path?
         if (currentIndexOnPath === pathToFly.length - 1) {
-            msgframe_Msgframe.sendMessage('Autopilot has reached the end of the path', 'info');
+            Msgframe.sendMessage('Autopilot has reached the end of the path', 'info');
             return false;
         }
 
@@ -6405,7 +6711,7 @@ class Nav {
             PardusOptionsUtility.setVariableValue('expected_route', pathToFly.slice(currentIndexOnPath, currentIndexOnPath + indexToFlyTo + 1));
             return this.navArea.nav(pathToFly[currentIndexOnPath + indexToFlyTo]);
         } if (checkForNpcs && currentIndexOnPath + indexToFlyTo < pathToFly.length - 1 && this.navArea.getTileOnNav(pathToFly[currentIndexOnPath + indexToFlyTo + 1])?.hasNpc()) {
-            msgframe_Msgframe.sendMessage('NPC is in the way, please fly around', 'error');
+            Msgframe.sendMessage('NPC is in the way, please fly around', 'error');
             return false;
         } if (this.navArea.centreTile.isWormhole()) {
             return this.navArea.warp(pathToFly[currentIndexOnPath]);
@@ -6413,7 +6719,7 @@ class Nav {
             return this.navArea.xhole(pathToFly[currentIndexOnPath + 1]);
         }
 
-        msgframe_Msgframe.sendMessage(`Unable to fly to ${static_sectors.getSectorAndCoordsForTile(pathToFly[currentIndexOnPath + 1])}, please make sure the route is continuous.`, 'error');
+        Msgframe.sendMessage(`Unable to fly to ${static_sectors.getSectorAndCoordsForTile(pathToFly[currentIndexOnPath + 1])}, please make sure the route is continuous.`, 'error');
         return false;
     }
 
@@ -6431,7 +6737,7 @@ class Nav {
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}modify_route`, !modifyRoute);
 
             if (!modifyRoute) {
-                msgframe_Msgframe.sendMessage('Modifying route', 'info');
+                Msgframe.sendMessage('Modifying route', 'info');
                 PardusOptionsUtility.setVariableValue('modified_route', [this.navArea.centreTile.id]);
                 // Clear any pending expected_route from the prior flight to prevent
                 // a delayed #addRecording() call from corrupting modified_route
@@ -6440,7 +6746,7 @@ class Nav {
                 const modifiedRoute = PardusOptionsUtility.getVariableValue('modified_route', []);
 
                 if (modifiedRoute.length < 2) {
-                    msgframe_Msgframe.sendMessage('Cancelling route modification', 'info');
+                    Msgframe.sendMessage('Cancelling route modification', 'info');
                     return;
                 }
 
@@ -6460,7 +6766,7 @@ class Nav {
                 const endIndex = routeArray.indexOf(modifiedRoute[modifiedRoute.length - 1]);
 
                 if (startIndex < 0 || endIndex < 0) {
-                    msgframe_Msgframe.sendMessage('Route modification must start and end on the existing route', 'error');
+                    Msgframe.sendMessage('Route modification must start and end on the existing route', 'error');
                     return;
                 }
 
@@ -6486,22 +6792,22 @@ class Nav {
                 this.navArea.addTilesHighlight(this.tileMap);
                 this.#highlightRecordedTiles();
 
-                msgframe_Msgframe.sendMessage('Saving route', 'info');
+                Msgframe.sendMessage('Saving route', 'info');
             }
         });
 
         document.addPardusKeyDownListener('toggle_autopilot_direction', { code: 67 }, () => {
             if (PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}modify_route`, false)) {
-                msgframe_Msgframe.sendMessage('Cannot change autopilot direction whilst modifying path', 'error');
+                Msgframe.sendMessage('Cannot change autopilot direction whilst modifying path', 'error');
                 return;
             }
 
             const forward = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, false);
 
             if (forward) {
-                msgframe_Msgframe.sendMessage('Autopilot heading backwards', 'info');
+                Msgframe.sendMessage('Autopilot heading backwards', 'info');
             } else {
-                msgframe_Msgframe.sendMessage('Autopilot heading forward', 'info');
+                Msgframe.sendMessage('Autopilot heading forward', 'info');
             }
 
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, !forward);
@@ -6523,7 +6829,7 @@ class Nav {
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}modify_route`, false);
             this.navigationCalculatorPopup.hide();
-            msgframe_Msgframe.sendMessage('Plotted route to destination', 'info');
+            Msgframe.sendMessage('Plotted route to destination', 'info');
 
             this.tileMap = new Map();
 
@@ -6536,7 +6842,7 @@ class Nav {
             this.navArea.addTilesHighlight(this.tileMap);
             this.#highlightRecordedTiles();
         }).catch(() => {
-            msgframe_Msgframe.sendMessage('Unable to get route to destination', 'error');
+            Msgframe.sendMessage('Unable to get route to destination', 'error');
         }).finally(() => {
             this.navigationCalculatorPopup.getCalculateButtonElement().removeAttribute('disabled');
             this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plot route';
@@ -6588,67 +6894,6 @@ class main_Main {
         this.squad = main.squad;
         this.optionsPrefix = this.squad ? 'squads_' : '';
         this.nav = new Nav(main.nav, this.optionsPrefix, this.squad);
-    }
-}
-
-;// ./src/classes/pages/msgframe.js
-
-
-class msgframe_Msgframe {
-    constructor() {
-        this.centreTd = document.querySelector('td[align="center"]');
-
-        if (window.parent) {
-            window.parent.window.addEventListener('pardus-message', (event) => {
-                this.addMessage(event.detail.msg, event.detail.type);
-            });
-        }
-    }
-
-    hasMessage() {
-        if (this.centreTd.querySelector('table')) {
-            return true;
-        }
-
-        return false;
-    }
-
-    addMessage(msg, type) {
-        let icon; let
-            colour;
-
-        switch (type) {
-            case 'error':
-                icon = 'gnome-error';
-                colour = '#FF3300';
-                break;
-            default:
-                icon = 'gnome-info';
-                colour = '#CCCCCC';
-        }
-
-        this.#setMessage(msg, icon, colour);
-    }
-
-    #setMessage(msg, icon, colour) {
-        const str = `<table style="background-image:url(${PardusOptionsUtility.getImagePackUrl()}bgmedium.gif);border-style:ridge;border-color:#2b2b51;border-width:2px;" cellspacing="0" cellpadding="0" align="center"><tbody><tr><td><img src="${PardusOptionsUtility.getImagePackUrl()}${icon}.png" alt="" width="32" height="32"></td><td style="padding-left:2px;padding-right:4px;"><font style="font-weight:bold;font-size:13px;" color="${colour}"> ${msg}</font></td></tr></tbody></table>`;
-        this.centreTd.innerHTML = str;
-    }
-
-    addErrorMessage(msg) {
-        this.addMessage(msg, 'error');
-    }
-
-    static sendMessage(msg, type) {
-        if (window.parent) {
-            return window.parent.window.dispatchEvent(new CustomEvent('pardus-message', {
-                detail: {
-                    msg, type,
-                },
-            }));
-        }
-
-        return window.dispatchEvent(new CustomEvent('pardus-message', { detail: { msg, type } }));
     }
 }
 
@@ -7291,8 +7536,7 @@ class Ship2OpponentCombat {
 
 
 
-
-;// ./src/index.js
+;// ./src/classes/pardus-flight-computer.js
 
 
 
@@ -7308,7 +7552,7 @@ class PardusFlightComputer {
                 new OptionsPage();
                 break;
             case '/msgframe.php':
-                new msgframe_Msgframe();
+                new Msgframe();
                 break;
             case '/ship2opponent_combat.php':
                 new Ship2OpponentCombat();
@@ -7318,6 +7562,9 @@ class PardusFlightComputer {
         }
     }
 }
+
+;// ./src/index.js
+
 
 __webpack_exports__ = __webpack_exports__["default"];
 /******/ 	return __webpack_exports__;
