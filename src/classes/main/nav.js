@@ -1,9 +1,14 @@
 import { PardusOptionsUtility } from 'pardus-options-library';
 import { Msgframe, Sectors } from 'pardus-library';
 import NavigationCalculatorPopup from './navigation-calculator-popup.js';
+import Tilestring from './tilestring.js';
+
+const STOP_BORDER_COLOUR = '#f0f';
+const STOP_GLYPH = '\u23F9';
 
 export default class Nav {
     #recordingListeners = new Map();
+    #decoratedStopIds = new Set();
 
     constructor(navArea, optionsPrefix, isSquad) {
         this.navArea = navArea;
@@ -11,20 +16,11 @@ export default class Nav {
         this.isSquad = isSquad;
         this.apCalculatorBaseUrl = PardusOptionsUtility.getVariableValue('ap_calculator_base_url', 'https://pardusapcalculator.uk');
 
-        this.tileString = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
         this.defaultColour = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}default_colour`, 'g');
-        this.tileMap = new Map();
-
-        // Initialise the tile set
-        for (const tileStr of this.tileString.split(',')) {
-            const tileIdAndColour = tileStr.split('|');
-
-            if (tileIdAndColour.length === 1) {
-                this.tileMap.set(tileIdAndColour[0], this.defaultColour);
-            } else {
-                this.tileMap.set(tileIdAndColour[0], tileIdAndColour[1]);
-            }
-        }
+        this.tilestring = new Tilestring(
+            PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, ''),
+            this.defaultColour,
+        );
 
         this.#addAutopilot();
         this.#addNavigationCalculatorPopup();
@@ -38,12 +34,36 @@ export default class Nav {
     }
 
     #partialRefresh() {
-        this.navArea.addTilesHighlight(this.tileMap);
+        this.navArea.addTilesHighlight(this.tilestring.colourMap);
+        this.#refreshStopDecorations();
         if (!this.isSquad) {
             this.#addRecording();
             this.#highlightRecordedTiles();
         }
         this.#addPathFinding();
+    }
+
+    #refreshStopDecorations() {
+        const wantStops = this.tilestring.stopIds;
+
+        const removed = [];
+        for (const id of this.#decoratedStopIds) {
+            if (!wantStops.has(id)) {
+                removed.push(id);
+            }
+        }
+        if (removed.length > 0) {
+            this.navArea.removeTilesBorder(removed, STOP_BORDER_COLOUR);
+            this.navArea.removeTilesGlyph(removed, STOP_GLYPH);
+        }
+
+        if (wantStops.size > 0) {
+            const ids = [...wantStops];
+            this.navArea.addTilesBorder(new Map(ids.map((id) => [id, STOP_BORDER_COLOUR])));
+            this.navArea.addTilesGlyph(new Map(ids.map((id) => [id, STOP_GLYPH])));
+        }
+
+        this.#decoratedStopIds = wantStops;
     }
 
     #highlightRecordedTiles() {
@@ -205,29 +225,22 @@ export default class Nav {
             return false;
         }
 
-        const tileString = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
-        const path = [];
-
         const checkForNpcs = PardusOptionsUtility.getVariableValue('autopilot_check_for_npcs', true);
+        const forwardDirection = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
+        const maxSteps = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_max_steps`, 10);
 
-        // Initialise the tile set
-        for (const tileStr of tileString.split(',')) {
-            path.push(tileStr.split('|')[0]);
-        }
+        const stored = new Tilestring(
+            PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, ''),
+            this.defaultColour,
+        );
 
-        if (path.length === 0) {
+        if (stored.length === 0) {
             Msgframe.sendMessage('No autopilot path programmed', 'error');
             return false;
         }
 
-        const forwardDirection = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
-        const maxSteps = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_max_steps`, 10);
-
-        const pathToFly = path;
-
-        if (!forwardDirection) {
-            pathToFly.reverse();
-        }
+        const flight = forwardDirection ? stored : stored.reverse();
+        const pathToFly = flight.ids;
 
         const currentLocation = this.navArea.centreTile.id;
         const currentIndexOnPath = pathToFly.indexOf(currentLocation);
@@ -253,7 +266,8 @@ export default class Nav {
                 break;
             }
 
-            const targetTile = this.navArea.getTileOnNav(pathToFly[currentIndexOnPath + step]);
+            const targetId = pathToFly[currentIndexOnPath + step];
+            const targetTile = this.navArea.getTileOnNav(targetId);
 
             // If the tile is not on the nav screen
             if (!targetTile) {
@@ -274,9 +288,14 @@ export default class Nav {
 
             const desiredDirectRoute = pathToFly.slice(currentIndexOnPath, currentIndexOnPath + 1 + step);
 
-            if (JSON.stringify(directRoute.map((i) => i.id)) === JSON.stringify(desiredDirectRoute)) {
-                indexToFlyTo = step;
-            } else {
+            if (JSON.stringify(directRoute.map((i) => i.id)) !== JSON.stringify(desiredDirectRoute)) {
+                break;
+            }
+
+            indexToFlyTo = step;
+
+            // A stop flag terminates the click ON this tile, not past it.
+            if (flight.isStop(targetId)) {
                 break;
             }
         }
@@ -324,46 +343,27 @@ export default class Nav {
                     return;
                 }
 
-                const forward = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
-                const tileString = PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, '');
-                const routeArray = [];
+                const stored = new Tilestring(
+                    PardusOptionsUtility.getVariableValue(`${this.optionsPrefix}tiles_to_highlight`, ''),
+                    this.defaultColour,
+                );
+                const updated = stored.spliceSegment(
+                    modifiedRoute[0],
+                    modifiedRoute[modifiedRoute.length - 1],
+                    modifiedRoute,
+                );
 
-                for (const tileStr of tileString.split(',')) {
-                    routeArray.push(tileStr.split('|')[0]);
-                }
-
-                if (!forward) {
-                    routeArray.reverse();
-                }
-
-                const startIndex = routeArray.indexOf(modifiedRoute[0]);
-                const endIndex = routeArray.indexOf(modifiedRoute[modifiedRoute.length - 1]);
-
-                if (startIndex < 0 || endIndex < 0) {
+                if (!updated) {
                     Msgframe.sendMessage('Route modification must start and end on the existing route', 'error');
                     return;
                 }
 
-                if (startIndex > endIndex) {
-                    routeArray.splice(endIndex, startIndex + 1 - endIndex, ...modifiedRoute.reverse());
-                } else {
-                    routeArray.splice(startIndex, endIndex + 1 - startIndex, ...modifiedRoute);
-                }
-
-                if (!forward) {
-                    routeArray.reverse();
-                }
-
-                PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}tiles_to_highlight`, routeArray.join(','));
-                this.tileMap = new Map();
-
-                // Initialise the tile set
-                for (const tileStr of routeArray) {
-                    this.tileMap.set(tileStr.toString(), this.defaultColour);
-                }
+                PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}tiles_to_highlight`, updated.toString());
+                this.tilestring = updated;
 
                 this.navArea.clearTilesHighlights();
-                this.navArea.addTilesHighlight(this.tileMap);
+                this.navArea.addTilesHighlight(this.tilestring.colourMap);
+                this.#refreshStopDecorations();
                 this.#highlightRecordedTiles();
 
                 Msgframe.sendMessage('Saving route', 'info');
@@ -399,21 +399,18 @@ export default class Nav {
         this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plotting...';
         this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center; color: green; background-color: silver');
         this.navigationCalculatorPopup.getRouteFrom(this.navArea.centreTile.id).then((route) => {
-            PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}tiles_to_highlight`, route.join(','));
+            const tileString = route.join(',');
+            PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}tiles_to_highlight`, tileString);
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}modify_route`, false);
             this.navigationCalculatorPopup.hide();
             Msgframe.sendMessage('Plotted route to destination', 'info');
 
-            this.tileMap = new Map();
-
-            // Initialise the tile set
-            for (const tileStr of route) {
-                this.tileMap.set(tileStr.toString(), this.defaultColour);
-            }
+            this.tilestring = new Tilestring(tileString, this.defaultColour);
 
             this.navArea.clearTilesHighlights();
-            this.navArea.addTilesHighlight(this.tileMap);
+            this.navArea.addTilesHighlight(this.tilestring.colourMap);
+            this.#refreshStopDecorations();
             this.#highlightRecordedTiles();
         }).catch(() => {
             Msgframe.sendMessage('Unable to get route to destination', 'error');
