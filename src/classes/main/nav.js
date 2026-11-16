@@ -399,10 +399,11 @@ export default class Nav {
         this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plotting...';
         this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center; color: green; background-color: silver');
         this.navigationCalculatorPopup.getRouteFrom(this.navArea.centreTile.id).then((route) => {
-            const tileString = route.join(',');
+            const tileString = route.path.join(',');
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}tiles_to_highlight`, tileString);
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}autopilot_forward`, true);
             PardusOptionsUtility.setVariableValue(`${this.optionsPrefix}modify_route`, false);
+            this.navigationCalculatorPopup.clearPreview();
             this.navigationCalculatorPopup.hide();
             Msgframe.sendMessage('Plotted route to destination', 'info');
 
@@ -418,6 +419,30 @@ export default class Nav {
             this.navigationCalculatorPopup.getCalculateButtonElement().removeAttribute('disabled');
             this.navigationCalculatorPopup.getCalculateButtonElement().value = 'Plot route';
             this.navigationCalculatorPopup.getCalculateButtonElement().setAttribute('style', 'text-align: center;');
+        });
+    }
+
+    #previewPath(event) {
+        if (!this.navigationCalculatorPopup.isVisible()) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const button = this.navigationCalculatorPopup.getPreviewButtonElement();
+
+        button.setAttribute('disabled', 'true');
+        button.value = 'Estimating...';
+        button.setAttribute('style', 'text-align: center; color: green; background-color: silver');
+
+        this.navigationCalculatorPopup.getRouteFrom(this.navArea.centreTile.id).then((route) => {
+            this.navigationCalculatorPopup.renderPreview(route);
+        }).catch(() => {
+            Msgframe.sendMessage('Unable to estimate the cost of that route', 'error');
+        }).finally(() => {
+            button.removeAttribute('disabled');
+            button.value = 'Preview cost';
+            button.setAttribute('style', 'text-align: center;');
         });
     }
 
@@ -453,6 +478,9 @@ export default class Nav {
         });
         this.navigationCalculatorPopup.getCalculateButtonElement().addEventListener('click', (keyEvent) => {
             this.#plotPath(keyEvent);
+        });
+        this.navigationCalculatorPopup.getPreviewButtonElement().addEventListener('click', (keyEvent) => {
+            this.#previewPath(keyEvent);
         });
     }
 }
